@@ -1,0 +1,45 @@
+:root {
+  --brand: #0d6efd;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.app-shell {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+
+.panel-shell {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+/* Quiz countdown */
+.countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.countdown.danger { color: #dc3545; }
+
+.quiz-option {
+  text-align: left;
+  white-space: normal;
+}
+.quiz-option.active {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .25);
+}
+
+.field-error {
+  color: #dc3545;
+  font-size: .85rem;
+  margin-top: .25rem;
+}
+
+.cursor-pointer { cursor: pointer; }
+
+.category-pill { text-transform: capitalize; }
