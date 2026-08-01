@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Apply — Onboarding Portal</title>
+  <title>SPAT Onboarding Portal — Ifakara Health Institute</title>
+  <meta name="description" content="Apply to the SPAT training program at the Ifakara Health Institute's MAP Project — R programming, spatial data, Bayesian statistics, and applied health data science.">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,236 +19,194 @@
   <!-- Theme -->
   <link href="css/styles.css" rel="stylesheet">
 </head>
-<body>
+<body class="landing">
 
 <nav class="navbar navbar-expand-lg">
   <div class="container">
-    <span class="navbar-brand fw-semibold"><i class="bi bi-mortarboard-fill text-primary"></i> Onboarding Portal</span>
-    <a class="btn btn-sm btn-outline-secondary" href="panel.html"><i class="bi bi-shield-lock"></i> Staff panel</a>
+    <a class="navbar-brand fw-semibold" href="index.html">
+      <i class="bi bi-mortarboard-fill text-primary"></i> SPAT Onboarding Portal
+    </a>
+    <div class="d-flex gap-2">
+      <a class="btn btn-sm btn-outline-secondary" href="apply.html"><i class="bi bi-file-earmark-text"></i> Apply</a>
+      <a class="btn btn-sm btn-outline-secondary" href="panel.html"><i class="bi bi-shield-lock"></i> Staff panel</a>
+    </div>
   </div>
 </nav>
 
-<div class="app-shell">
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-inner text-center">
+      <span class="badge-pill-brand mb-3">
+        <i class="bi bi-buildings me-1"></i> Ifakara Health Institute · MAP Project
+      </span>
+      <h1 class="hero-title">SPAT Onboarding Portal</h1>
+      <p class="hero-tagline">
+        Apply to join our training program in
+        <strong>R programming</strong>, <strong>spatial data analysis</strong>,
+        <strong>Bayesian statistics</strong>, and <strong>applied health data science</strong>.
+      </p>
+      <div class="hero-cta d-flex flex-wrap justify-content-center gap-3">
+        <a class="btn btn-primary btn-lg px-4" href="apply.html" id="cta-start">
+          Start Application <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+        <a class="btn btn-outline-secondary btn-lg px-4" href="#how-it-works">
+          Learn more
+        </a>
+      </div>
+      <p class="text-muted small mt-3 mb-0">
+        <i class="bi bi-clock me-1"></i> Takes about 15 minutes, including a short timed quiz.
+      </p>
+    </div>
+  </div>
+  <div class="hero-decor" aria-hidden="true"></div>
+</section>
 
-  <!-- Progress steps -->
-  <ul class="stepper" id="steps">
-    <li class="step active" data-step="form">
-      <span class="step-circle">1</span>
-      <span class="step-label">Application</span>
-    </li>
-    <li class="step" data-step="intro">
-      <span class="step-circle">2</span>
-      <span class="step-label">Quiz</span>
-    </li>
-    <li class="step" data-step="question">
-      <span class="step-circle">3</span>
-      <span class="step-label">Questions</span>
-    </li>
-    <li class="step" data-step="result">
-      <span class="step-circle">4</span>
-      <span class="step-label">Result</span>
-    </li>
-  </ul>
+<!-- ============ HOW IT WORKS ============ -->
+<section class="section-white" id="how-it-works">
+  <div class="container">
+    <div class="section-header text-center mb-5">
+      <span class="badge-pill-brand mb-2">How it works</span>
+      <h2>From application to result in three steps</h2>
+      <p class="text-muted">A simple, transparent process — no waiting, no hidden hurdles.</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
+          <h5>1. Apply</h5>
+          <p class="text-muted mb-0">
+            Fill in your details, tell us about your background and motivation,
+            and upload your CV.
+          </p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+          <h5>2. Take the quiz</h5>
+          <p class="text-muted mb-0">
+            A short, per-question timed knowledge check on R, spatial data,
+            and Bayesian topics. No going back.
+          </p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-patch-check-fill"></i></div>
+          <h5>3. See your result</h5>
+          <p class="text-muted mb-0">
+            Get your score immediately, and hear back from our team about
+            next steps in the selection process.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <!-- ============ STEP 1: APPLICATION FORM ============ -->
-  <section id="screen-form" class="screen">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="mb-1">Application form</h4>
-        <p class="text-muted small mb-4">All fields are required unless marked optional.</p>
-
-        <div class="alert alert-danger d-none" id="form-alert"></div>
-
-        <form id="application-form" novalidate>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">First name</label>
-              <input class="form-control form-control-air" name="first_name" required>
-              <div class="field-error" data-error="first_name"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Last name</label>
-              <input class="form-control form-control-air" name="last_name" required>
-              <div class="field-error" data-error="last_name"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Email</label>
-              <input type="email" class="form-control form-control-air" name="email" required>
-              <div class="field-error" data-error="email"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Phone</label>
-              <input class="form-control form-control-air" name="phone" required>
-              <div class="field-error" data-error="phone"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Nationality</label>
-              <input class="form-control form-control-air" name="nationality" required>
-              <div class="field-error" data-error="nationality"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Country of residence</label>
-              <input class="form-control form-control-air" name="country_of_residence" required>
-              <div class="field-error" data-error="country_of_residence"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Gender</label>
-              <select class="form-select form-control-air" name="gender" required>
-                <option value="" selected disabled>Choose…</option>
-                <option>Female</option>
-                <option>Male</option>
-                <option>Non-binary</option>
-                <option>Prefer not to say</option>
-              </select>
-              <div class="field-error" data-error="gender"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Institution</label>
-              <input class="form-control form-control-air" name="institution" required>
-              <div class="field-error" data-error="institution"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Institution type</label>
-              <select class="form-select form-control-air" name="institution_type" required>
-                <option value="" selected disabled>Choose…</option>
-                <option>University</option>
-                <option>NGO</option>
-                <option>Government</option>
-                <option>Private sector</option>
-                <option>Other</option>
-              </select>
-              <div class="field-error" data-error="institution_type"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Role</label>
-              <input class="form-control form-control-air" name="role" required>
-              <div class="field-error" data-error="role"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Education</label>
-              <select class="form-select form-control-air" name="education" required>
-                <option value="" selected disabled>Choose…</option>
-                <option>BSc</option>
-                <option>MSc</option>
-                <option>PhD</option>
-                <option>Other</option>
-              </select>
-              <div class="field-error" data-error="education"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">R experience</label>
-              <select class="form-select form-control-air" name="r_experience" required>
-                <option value="" selected disabled>Choose…</option>
-                <option>None</option>
-                <option>Beginner</option>
-                <option>Intermediate</option>
-                <option>Advanced</option>
-              </select>
-              <div class="field-error" data-error="r_experience"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Bayesian knowledge</label>
-              <select class="form-select form-control-air" name="bayesian_knowledge" required>
-                <option value="" selected disabled>Choose…</option>
-                <option>None</option>
-                <option>Beginner</option>
-                <option>Intermediate</option>
-                <option>Advanced</option>
-              </select>
-              <div class="field-error" data-error="bayesian_knowledge"></div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Motivation <span class="text-muted">(optional)</span></label>
-              <textarea class="form-control form-control-air" name="motivation" rows="3"></textarea>
-              <div class="field-error" data-error="motivation"></div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Expectations <span class="text-muted">(optional)</span></label>
-              <textarea class="form-control form-control-air" name="expectations" rows="3"></textarea>
-              <div class="field-error" data-error="expectations"></div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">CV upload <span class="text-muted">(PDF/DOC)</span></label>
-              <input type="file" class="form-control" name="cv" accept=".pdf,.doc,.docx" required>
-              <div class="field-error" data-error="cv"></div>
+<!-- ============ ABOUT ============ -->
+<section class="section-tint" id="about">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <span class="badge-pill-brand mb-3">About the program</span>
+        <h2>Advancing spatial analysis and applied statistics in health.</h2>
+        <p class="lead text-muted">
+          Run by the <strong>MAP Project team</strong> at the
+          <strong>Ifakara Health Institute</strong>, this program brings together
+          researchers, students, and practitioners to strengthen skills in modern
+          statistical and spatial data analysis — with a focus on real-world
+          public health applications.
+        </p>
+        <p class="text-muted">
+          Selected applicants join a structured onboarding path with hands-on
+          projects, mentorship from senior researchers, and access to the tools
+          we use in production research.
+        </p>
+      </div>
+      <div class="col-lg-6">
+        <div class="topic-grid">
+          <div class="topic-item">
+            <i class="bi bi-code-slash"></i>
+            <div>
+              <strong>R programming</strong>
+              <span>Data wrangling, visualization, and reproducible workflows.</span>
             </div>
           </div>
-
-          <div class="d-grid mt-4">
-            <button class="btn btn-primary btn-lg" type="submit" id="submit-application">
-              Submit application <i class="bi bi-arrow-right ms-1"></i>
-            </button>
+          <div class="topic-item">
+            <i class="bi bi-globe-americas"></i>
+            <div>
+              <strong>Spatial data</strong>
+              <span>Vector &amp; raster analysis with <code>sf</code>, <code>terra</code>, and friends.</span>
+            </div>
           </div>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ STEP 2: QUIZ INTRO ============ -->
-  <section id="screen-intro" class="screen d-none">
-    <div class="text-center">
-      <span class="auth-head-icon"><i class="bi bi-clock-history"></i></span>
-    </div>
-    <div class="card">
-      <div class="card-body text-center">
-        <h4 class="mt-1">You're ready for the knowledge check</h4>
-        <p class="text-muted mb-4">A short, timed quiz to complete your application.</p>
-        <ul class="list-unstyled text-muted mb-4 mx-auto" style="max-width:360px">
-          <li class="mb-2"><i class="bi bi-check2 text-primary me-2"></i>One question at a time.</li>
-          <li class="mb-2"><i class="bi bi-check2 text-primary me-2"></i>Countdown runs per question — answer before it ends.</li>
-          <li class="mb-2"><i class="bi bi-check2 text-primary me-2"></i>You cannot go back, and the quiz can't be restarted.</li>
-        </ul>
-        <button class="btn btn-primary btn-lg px-5" id="start-quiz">Start the quiz</button>
-        <div class="alert alert-danger d-none mt-3" id="intro-alert"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ STEP 3: QUESTION ============ -->
-  <section id="screen-question" class="screen d-none">
-    <div class="card">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <span class="text-muted small" id="q-progress">Question 1 of 12</span>
-          <span class="badge category-pill" id="q-category"></span>
-          <span class="countdown" id="q-countdown">--</span>
+          <div class="topic-item">
+            <i class="bi bi-graph-up"></i>
+            <div>
+              <strong>Bayesian statistics</strong>
+              <span>Modelling under uncertainty with modern tools.</span>
+            </div>
+          </div>
+          <div class="topic-item">
+            <i class="bi bi-heart-pulse"></i>
+            <div>
+              <strong>Applied health data</strong>
+              <span>Real-world epidemiology and public-health analytics.</span>
+            </div>
+          </div>
         </div>
-        <div class="progress mb-4" style="height:6px">
-          <div class="progress-bar" id="q-progressbar" style="width:0%"></div>
-        </div>
-
-        <h5 class="mb-4" id="q-text"></h5>
-
-        <div class="d-grid gap-2" id="q-options"></div>
-
-        <div class="d-grid mt-4">
-          <button class="btn btn-primary btn-lg" id="submit-answer" disabled>Submit answer</button>
-        </div>
-        <p class="text-muted small text-center mt-3 mb-0" id="q-status"></p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ============ STEP 4: RESULT ============ -->
-  <section id="screen-result" class="screen d-none">
-    <div class="text-center">
-      <span class="auth-head-icon success"><i class="bi bi-patch-check-fill"></i></span>
-    </div>
-    <div class="card">
-      <div class="card-body text-center">
-        <h3 class="mt-1">Quiz complete</h3>
-        <p class="text-muted">Thank you for completing your application.</p>
-        <div class="display-4 fw-bold my-3"><span id="r-score">0</span> / <span id="r-total">0</span></div>
-        <p class="text-muted small mb-0" id="r-completed"></p>
+<!-- ============ CTA STRIP ============ -->
+<section class="cta-strip">
+  <div class="container text-center">
+    <h3 class="mb-2">Ready to apply?</h3>
+    <p class="mb-4 opacity-90">
+      The application form takes a few minutes. The quiz that follows takes about ten.
+    </p>
+    <a class="btn btn-light btn-lg px-4" href="apply.html" id="cta-bottom">
+      Start your application <i class="bi bi-arrow-right ms-1"></i>
+    </a>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="row align-items-center g-3">
+      <div class="col-md-7">
+        <div class="fw-semibold mb-1">
+          <i class="bi bi-mortarboard-fill text-primary"></i> SPAT Onboarding Portal
+        </div>
+        <p class="text-muted small mb-0">
+          A recruitment initiative of the MAP Project at the Ifakara Health Institute.
+        </p>
+      </div>
+      <div class="col-md-5 text-md-end">
+        <a class="footer-link me-3" href="apply.html">Apply</a>
+        <a class="footer-link me-3" href="#about">About</a>
+        <a class="footer-link" href="panel.html">Staff panel</a>
       </div>
     </div>
-  </section>
-
-</div>
+  </div>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-<script src="js/api.js"></script>
-<script src="js/applicant.js"></script>
+<script>
+  // If the applicant has a saved session, switch CTA labels to "Continue".
+  (function () {
+    const hasProgress = localStorage.getItem("application_id") || localStorage.getItem("session_id");
+    if (!hasProgress) return;
+    const top = document.getElementById("cta-start");
+    const bot = document.getElementById("cta-bottom");
+    if (top) top.innerHTML = 'Continue Application <i class="bi bi-arrow-right ms-1"></i>';
+    if (bot) bot.innerHTML = 'Continue your application <i class="bi bi-arrow-right ms-1"></i>';
+  })();
+</script>
 </body>
 </html>

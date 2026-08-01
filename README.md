@@ -13,9 +13,10 @@ It's designed to be deployed to Vercel and to call the Django backend hosted on 
 
 ```
 .
-├── index.html          # applicant portal (form -> quiz -> result)
+├── index.html          # landing page (hero, about, how-it-works, footer)
+├── apply.html          # applicant portal (form -> quiz -> result)
 ├── css/
-│   └── styles.css
+│   └── styles.css      # AdminCa-inspired theme + landing styles
 ├── js/
 │   ├── api.js          # shared fetch helpers, API base URL, ApiError class
 │   └── applicant.js    # the state machine (form -> intro -> question -> result)
@@ -24,6 +25,11 @@ It's designed to be deployed to Vercel and to call the Django backend hosted on 
 ```
 
 That's it. No `node_modules`, no `dist/`, no bundler.
+
+**Routing:** `/` serves the landing page. `/apply` (i.e. `apply.html`) is the actual
+application + quiz flow. The landing page's "Start Application" CTA links to `apply.html`,
+and the CTA text switches to "Continue Application" if `localStorage` shows the user has an
+in-progress session.
 
 ---
 

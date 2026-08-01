@@ -1,0 +1,256 @@
+<!Doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apply — SPAT Onboarding Portal</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <!-- Theme -->
+  <link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand fw-semibold" href="index.html"><i class="bi bi-mortarboard-fill text-primary"></i> SPAT Onboarding Portal</a>
+    <div class="d-flex gap-2">
+      <a class="btn btn-sm btn-outline-secondary" href="index.html"><i class="bi bi-arrow-left"></i> Home</a>
+      <a class="btn btn-sm btn-outline-secondary" href="panel.html"><i class="bi bi-shield-lock"></i> Staff panel</a>
+    </div>
+  </div>
+</nav>
+
+<div class="app-shell">
+
+  <!-- Progress steps -->
+  <ul class="stepper" id="steps">
+    <li class="step active" data-step="form">
+      <span class="step-circle">1</span>
+      <span class="step-label">Application</span>
+    </li>
+    <li class="step" data-step="intro">
+      <span class="step-circle">2</span>
+      <span class="step-label">Quiz</span>
+    </li>
+    <li class="step" data-step="question">
+      <span class="step-circle">3</span>
+      <span class="step-label">Questions</span>
+    </li>
+    <li class="step" data-step="result">
+      <span class="step-circle">4</span>
+      <span class="step-label">Result</span>
+    </li>
+  </ul>
+
+  <!-- ============ STEP 1: APPLICATION FORM ============ -->
+  <section id="screen-form" class="screen">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="mb-1">Application form</h4>
+        <p class="text-muted small mb-4">All fields are required unless marked optional.</p>
+
+        <div class="alert alert-danger d-none" id="form-alert"></div>
+
+        <form id="application-form" novalidate>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">First name</label>
+              <input class="form-control form-control-air" name="first_name" required>
+              <div class="field-error" data-error="first_name"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Last name</label>
+              <input class="form-control form-control-air" name="last_name" required>
+              <div class="field-error" data-error="last_name"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control form-control-air" name="email" required>
+              <div class="field-error" data-error="email"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone</label>
+              <input class="form-control form-control-air" name="phone" required>
+              <div class="field-error" data-error="phone"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Nationality</label>
+              <input class="form-control form-control-air" name="nationality" required>
+              <div class="field-error" data-error="nationality"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Country of residence</label>
+              <input class="form-control form-control-air" name="country_of_residence" required>
+              <div class="field-error" data-error="country_of_residence"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Gender</label>
+              <select class="form-select form-control-air" name="gender" required>
+                <option value="" selected disabled>Choose…</option>
+                <option>Female</option>
+                <option>Male</option>
+                <option>Non-binary</option>
+                <option>Prefer not to say</option>
+              </select>
+              <div class="field-error" data-error="gender"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Institution</label>
+              <input class="form-control form-control-air" name="institution" required>
+              <div class="field-error" data-error="institution"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Institution type</label>
+              <select class="form-select form-control-air" name="institution_type" required>
+                <option value="" selected disabled>Choose…</option>
+                <option>University</option>
+                <option>NGO</option>
+                <option>Government</option>
+                <option>Private sector</option>
+                <option>Other</option>
+              </select>
+              <div class="field-error" data-error="institution_type"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Role</label>
+              <input class="form-control form-control-air" name="role" required>
+              <div class="field-error" data-error="role"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Education</label>
+              <select class="form-select form-control-air" name="education" required>
+                <option value="" selected disabled>Choose…</option>
+                <option>BSc</option>
+                <option>MSc</option>
+                <option>PhD</option>
+                <option>Other</option>
+              </select>
+              <div class="field-error" data-error="education"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">R experience</label>
+              <select class="form-select form-control-air" name="r_experience" required>
+                <option value="" selected disabled>Choose…</option>
+                <option>None</option>
+                <option>Beginner</option>
+                <option>Intermediate</option>
+                <option>Advanced</option>
+              </select>
+              <div class="field-error" data-error="r_experience"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Bayesian knowledge</label>
+              <select class="form-select form-control-air" name="bayesian_knowledge" required>
+                <option value="" selected disabled>Choose…</option>
+                <option>None</option>
+                <option>Beginner</option>
+                <option>Intermediate</option>
+                <option>Advanced</option>
+              </select>
+              <div class="field-error" data-error="bayesian_knowledge"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Motivation <span class="text-muted">(optional)</span></label>
+              <textarea class="form-control form-control-air" name="motivation" rows="3"></textarea>
+              <div class="field-error" data-error="motivation"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Expectations <span class="text-muted">(optional)</span></label>
+              <textarea class="form-control form-control-air" name="expectations" rows="3"></textarea>
+              <div class="field-error" data-error="expectations"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">CV upload <span class="text-muted">(PDF/DOC)</span></label>
+              <input type="file" class="form-control" name="cv" accept=".pdf,.doc,.docx" required>
+              <div class="field-error" data-error="cv"></div>
+            </div>
+          </div>
+
+          <div class="d-grid mt-4">
+            <button class="btn btn-primary btn-lg" type="submit" id="submit-application">
+              Submit application <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 2: QUIZ INTRO ============ -->
+  <section id="screen-intro" class="screen d-none">
+    <div class="text-center">
+      <span class="auth-head-icon"><i class="bi bi-clock-history"></i></span>
+    </div>
+    <div class="card">
+      <div class="card-body text-center">
+        <h4 class="mt-1">You're ready for the knowledge check</h4>
+        <p class="text-muted mb-4">A short, timed quiz to complete your application.</p>
+        <ul class="list-unstyled text-muted mb-4 mx-auto" style="max-width:360px">
+          <li class="mb-2"><i class="bi bi-check2 text-primary me-2"></i>One question at a time.</li>
+          <li class="mb-2"><i class="bi bi-check2 text-primary me-2"></i>Countdown runs per question — answer before it ends.</li>
+          <li class="mb-2"><i class="bi bi-check2 text-primary me-2"></i>You cannot go back, and the quiz can't be restarted.</li>
+        </ul>
+        <button class="btn btn-primary btn-lg px-5" id="start-quiz">Start the quiz</button>
+        <div class="alert alert-danger d-none mt-3" id="intro-alert"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 3: QUESTION ============ -->
+  <section id="screen-question" class="screen d-none">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="text-muted small" id="q-progress">Question 1 of 12</span>
+          <span class="badge category-pill" id="q-category"></span>
+          <span class="countdown" id="q-countdown">--</span>
+        </div>
+        <div class="progress mb-4" style="height:6px">
+          <div class="progress-bar" id="q-progressbar" style="width:0%"></div>
+        </div>
+
+        <h5 class="mb-4" id="q-text"></h5>
+
+        <div class="d-grid gap-2" id="q-options"></div>
+
+        <div class="d-grid mt-4">
+          <button class="btn btn-primary btn-lg" id="submit-answer" disabled>Submit answer</button>
+        </div>
+        <p class="text-muted small text-center mt-3 mb-0" id="q-status"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 4: RESULT ============ -->
+  <section id="screen-result" class="screen d-none">
+    <div class="text-center">
+      <span class="auth-head-icon success"><i class="bi bi-patch-check-fill"></i></span>
+    </div>
+    <div class="card">
+      <div class="card-body text-center">
+        <h3 class="mt-1">Quiz complete</h3>
+        <p class="text-muted">Thank you for completing your application.</p>
+        <div class="display-4 fw-bold my-3"><span id="r-score">0</span> / <span id="r-total">0</span></div>
+        <p class="text-muted small mb-0" id="r-completed"></p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="js/api.js"></script>
+<script src="js/applicant.js"></script>
+</body>
+</html>
