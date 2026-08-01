@@ -14,11 +14,15 @@ const screens = {
   result:   document.getElementById("screen-result"),
 };
 
+const STEP_ORDER = ["form", "intro", "question", "result"];
+
 function showScreen(name) {
   Object.entries(screens).forEach(([k, el]) => el.classList.toggle("d-none", k !== name));
+  const currentIdx = STEP_ORDER.indexOf(name);
   document.querySelectorAll("#steps [data-step]").forEach((b) => {
-    b.classList.toggle("bg-primary", b.dataset.step === name);
-    b.classList.toggle("bg-secondary", b.dataset.step !== name);
+    const idx = STEP_ORDER.indexOf(b.dataset.step);
+    b.classList.toggle("active", idx === currentIdx);
+    b.classList.toggle("done", idx >= 0 && idx < currentIdx);
   });
 }
 

@@ -13,3 +13,6 @@ Thumbs.db
 # Local env overrides (if you ever add one)
 .env
 .env.local
+
+# Uploaded reference templates being cherry-picked from (not deployed)
+/_reference/
