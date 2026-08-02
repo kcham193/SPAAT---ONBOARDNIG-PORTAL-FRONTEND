@@ -517,3 +517,193 @@ body.landing { background: #ffffff; }
 }
 .footer-link:hover { color: var(--brand); }
 
+/* =========================================================================
+   STAFF PANEL (panel.html — body.panel)
+   ========================================================================= */
+
+body.panel { background: var(--page-bg); }
+
+/* -------------------------------------------------------------- Dark navbar */
+.navbar-panel {
+  background: linear-gradient(135deg, #1f2a3d 0%, #2c3a56 100%) !important;
+  border: 0 !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+.navbar-panel .navbar-brand { color: #fff !important; }
+.navbar-panel .navbar-brand .text-primary { color: #a5b1e8 !important; }
+.navbar-panel .btn-outline-light {
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+.navbar-panel .btn-outline-light:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
+/* -------------------------------------------------------------- Search input group */
+.search-group .input-group-text {
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-right: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
+  color: var(--muted);
+}
+.search-group .form-control {
+  border-left: 0;
+  border-radius: 0 var(--radius) var(--radius) 0 !important;
+  padding-left: 0.25rem !important;
+}
+.search-group .form-control:focus {
+  box-shadow: none !important;
+  border-color: var(--border-soft) !important;
+}
+
+/* -------------------------------------------------------------- Applicants table */
+.applicants-table, .quiz-table {
+  font-size: .92rem;
+}
+.applicants-table thead th,
+.quiz-table thead th {
+  background: #fafbfe;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 1px solid var(--border-soft) !important;
+  padding: .95rem 1rem;
+}
+.applicants-table tbody td,
+.quiz-table tbody td {
+  padding: .85rem 1rem;
+  border-color: var(--border-soft);
+  vertical-align: middle;
+}
+.applicants-table tbody tr {
+  transition: background .15s ease;
+}
+.applicants-table tbody tr:hover {
+  background: var(--brand-tint) !important;
+  --bs-table-hover-bg: transparent;
+}
+.applicants-table tbody tr:hover .bi-chevron-right {
+  color: var(--brand) !important;
+}
+.applicants-table .form-check-input:checked,
+.form-check-input:checked {
+  background-color: var(--brand);
+  border-color: var(--brand);
+}
+.applicants-table .form-check-input:focus {
+  box-shadow: 0 0 0 3px rgba(92, 107, 192, 0.2);
+  border-color: var(--brand);
+}
+
+/* -------------------------------------------------------------- Soft badges */
+.badge {
+  font-weight: 500;
+  padding: .4rem .7rem;
+  border-radius: var(--radius-pill);
+  font-size: .75rem;
+  letter-spacing: .01em;
+}
+.badge.bg-secondary-soft { background: #eef1f6; color: #647285; }
+.badge.bg-success-soft   { background: #e2f7f2; color: #0f9a83; }
+.badge.bg-warning-soft   { background: #fef3e0; color: #b57414; }
+.badge.bg-danger-soft    { background: #fdecee; color: #c9384c; }
+
+/* -------------------------------------------------------------- Bulk action bar */
+.bulk-bar {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: .75rem 1rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-input);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+.btn-success-soft {
+  background: #e2f7f2;
+  color: #0f9a83;
+  border: 0;
+}
+.btn-success-soft:hover {
+  background: #18C5A9;
+  color: #fff;
+}
+.btn-danger-soft {
+  background: #fdecee;
+  color: #c9384c;
+  border: 0;
+}
+.btn-danger-soft:hover {
+  background: #f75a5f;
+  color: #fff;
+}
+
+/* -------------------------------------------------------------- Detail view */
+.back-link {
+  color: var(--brand);
+  font-weight: 500;
+  text-decoration: none;
+}
+.back-link:hover { color: var(--brand-dark); }
+
+.decision-strip {
+  background: #fff;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-input);
+}
+
+/* -------------------------------------------------------------- Nav tabs */
+.nav-tabs {
+  border-bottom: 1px solid var(--border-soft);
+}
+.nav-tabs .nav-link {
+  border: 0;
+  color: var(--muted);
+  font-weight: 500;
+  padding: .75rem 1.25rem;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent !important;
+  transition: color .15s ease, border-color .15s ease;
+}
+.nav-tabs .nav-link:hover { color: var(--body); }
+.nav-tabs .nav-link.active {
+  color: var(--brand) !important;
+  border-bottom-color: var(--brand);
+  background: transparent;
+}
+
+/* -------------------------------------------------------------- Profile fields */
+#d-fields dt {
+  font-weight: 500;
+  padding: .6rem 0;
+  border-top: 1px solid var(--border-soft);
+}
+#d-fields dt:first-of-type { border-top: 0; }
+#d-fields dd {
+  padding: .6rem 0;
+  border-top: 1px solid var(--border-soft);
+  margin-bottom: 0;
+}
+#d-fields dd:first-of-type { border-top: 0; }
+
+/* -------------------------------------------------------------- Quiz breakdown */
+.quiz-table code, .quiz-table td { font-size: .9rem; }
+#quiz-summary .alert-info {
+  background: var(--brand-tint);
+  color: var(--brand);
+  border-radius: var(--radius);
+}
+#quiz-summary .alert-secondary {
+  background: #eef1f6;
+  color: #647285;
+  border-radius: var(--radius);
+}
+

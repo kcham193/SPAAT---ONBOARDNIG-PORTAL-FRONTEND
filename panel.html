@@ -1,0 +1,194 @@
+<!Doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Staff Panel — SPAT Onboarding Portal</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <!-- Theme -->
+  <link href="css/styles.css" rel="stylesheet">
+</head>
+<body class="panel">
+
+<nav class="navbar navbar-expand-lg navbar-panel">
+  <div class="container">
+    <a class="navbar-brand fw-semibold" href="index.html">
+      <i class="bi bi-shield-lock-fill text-primary"></i> SPAT Staff Panel
+    </a>
+    <div class="d-flex align-items-center gap-3">
+      <a class="btn btn-sm btn-outline-light" href="index.html"><i class="bi bi-house-door"></i> Home</a>
+      <div class="d-flex align-items-center gap-3 d-none" id="nav-user">
+        <span class="text-white-50 small" id="nav-username"></span>
+        <button class="btn btn-sm btn-outline-light" id="logout-btn"><i class="bi bi-box-arrow-right"></i> Log out</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="panel-shell">
+
+  <!-- ============ LOGIN ============ -->
+  <section id="view-login" class="d-none">
+    <div class="row justify-content-center">
+      <div class="col-md-5">
+        <div class="text-center">
+          <span class="auth-head-icon"><i class="bi bi-shield-lock"></i></span>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h4 class="mb-1 text-center">Staff sign in</h4>
+            <p class="text-muted small text-center mb-4">Restricted area — token-authenticated staff only.</p>
+            <div class="alert alert-danger d-none" id="login-alert"></div>
+            <form id="login-form">
+              <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input class="form-control form-control-air" name="username" required autocomplete="username">
+              </div>
+              <div class="mb-4">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control form-control-air" name="password" required autocomplete="current-password">
+              </div>
+              <div class="d-grid">
+                <button class="btn btn-primary btn-lg" type="submit" id="login-btn">
+                  Sign in <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ APPLICANTS LIST ============ -->
+  <section id="view-list" class="d-none">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
+      <div>
+        <h4 class="mb-1">Applicants</h4>
+        <p class="text-muted small mb-0" id="list-count">Loading…</p>
+      </div>
+      <div class="input-group search-group" style="max-width:340px">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input class="form-control" id="search-input" placeholder="Name, email or institution…">
+      </div>
+    </div>
+
+    <div class="alert alert-danger d-none" id="list-alert"></div>
+
+    <!-- Bulk actions (shown when one or more rows are selected) -->
+    <div class="bulk-bar d-none" id="bulk-bar">
+      <span class="fw-semibold me-2" id="bulk-count"></span>
+      <button class="btn btn-sm btn-success-soft" data-bulk="select"><i class="bi bi-check2-circle"></i> Mark selected</button>
+      <button class="btn btn-sm btn-danger-soft" data-bulk="reject"><i class="bi bi-x-circle"></i> Mark rejected</button>
+      <button class="btn btn-sm btn-outline-secondary" data-bulk="pending"><i class="bi bi-arrow-counterclockwise"></i> Reset to pending</button>
+      <button class="btn btn-sm btn-outline-danger ms-auto" data-bulk="delete"><i class="bi bi-trash"></i> Delete</button>
+    </div>
+
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 applicants-table">
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" class="form-check-input" id="select-all" title="Select all"></th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Institution</th>
+              <th>Country</th>
+              <th>Quiz</th>
+              <th class="text-center">Score</th>
+              <th>Decision</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="applicants-body">
+            <tr><td colspan="9" class="text-center text-muted py-4">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-3">
+      <div class="btn-group">
+        <button class="btn btn-outline-secondary btn-sm" id="prev-page" disabled><i class="bi bi-chevron-left"></i> Prev</button>
+        <button class="btn btn-outline-secondary btn-sm" id="next-page" disabled>Next <i class="bi bi-chevron-right"></i></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ APPLICANT DETAIL ============ -->
+  <section id="view-detail" class="d-none">
+    <button class="btn btn-link px-0 mb-3 back-link" id="back-to-list">
+      <i class="bi bi-arrow-left"></i> Back to applicants
+    </button>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-3">
+      <div>
+        <h4 class="mb-1" id="d-name"></h4>
+        <span class="text-muted" id="d-email"></span>
+      </div>
+      <a class="btn btn-outline-primary d-none" id="d-cv" target="_blank" rel="noopener">
+        <i class="bi bi-file-earmark-arrow-down"></i> Download CV
+      </a>
+    </div>
+
+    <!-- Decision controls -->
+    <div class="alert alert-danger d-none" id="detail-alert"></div>
+    <div class="decision-strip d-flex align-items-center flex-wrap gap-2 mb-4">
+      <span class="text-muted">Decision:</span>
+      <span id="d-decision"></span>
+      <div class="btn-group btn-group-sm ms-2">
+        <button class="btn btn-outline-success" data-decision="select"><i class="bi bi-check2"></i> Select</button>
+        <button class="btn btn-outline-danger" data-decision="reject"><i class="bi bi-x"></i> Reject</button>
+        <button class="btn btn-outline-secondary" data-decision="pending">Pending</button>
+      </div>
+      <button class="btn btn-sm btn-outline-danger ms-auto" id="d-delete">
+        <i class="bi bi-trash"></i> Delete applicant
+      </button>
+    </div>
+
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item"><button class="nav-link active" data-tab="profile">Profile</button></li>
+      <li class="nav-item"><button class="nav-link" data-tab="quiz">Quiz breakdown</button></li>
+    </ul>
+
+    <div id="tab-profile">
+      <div class="card">
+        <div class="card-body">
+          <dl class="row mb-0" id="d-fields"></dl>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-quiz" class="d-none">
+      <div id="quiz-summary" class="mb-3"></div>
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 quiz-table">
+            <thead>
+              <tr><th style="width:36px">#</th><th>Question</th><th>Category</th><th>Submitted</th><th>Correct</th><th class="text-center">Result</th></tr>
+            </thead>
+            <tbody id="quiz-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="js/api.js"></script>
+<script src="js/panel.js"></script>
+</body>
+</html>

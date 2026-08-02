@@ -4,8 +4,8 @@ Standalone applicant-facing frontend for the [Onboarding Portal backend](https:/
 This is a pure-static site (HTML + CSS + JS, Bootstrap 5 via CDN) — **no build step, no framework**.
 It's designed to be deployed to Vercel and to call the Django backend hosted on PythonAnywhere.
 
-> **Scope of this repo:** the applicant portal only (application form + timed quiz + result).
-> The staff panel will be added later.
+> **Scope of this repo:** landing page + applicant portal (application form + timed quiz + result)
+> + staff panel (token-authenticated admin — applicants list, detail view, quiz breakdown, bulk actions).
 
 ---
 
@@ -15,11 +15,13 @@ It's designed to be deployed to Vercel and to call the Django backend hosted on 
 .
 ├── index.html          # landing page (hero, about, how-it-works, footer)
 ├── apply.html          # applicant portal (form -> quiz -> result)
+├── panel.html          # staff panel (login -> applicants list -> detail + quiz)
 ├── css/
-│   └── styles.css      # AdminCa-inspired theme + landing styles
+│   └── styles.css      # AdminCa-inspired theme + landing + panel styles
 ├── js/
 │   ├── api.js          # shared fetch helpers, API base URL, ApiError class
-│   └── applicant.js    # the state machine (form -> intro -> question -> result)
+│   ├── applicant.js    # the state machine (form -> intro -> question -> result)
+│   └── panel.js        # admin views (login / list / detail / decisions / bulk)
 ├── .gitignore
 └── README.md
 ```
@@ -160,16 +162,24 @@ Then connect the repo to Vercel (section 4).
 
 ---
 
-## 8. What's next (staff panel)
+## 8. Staff panel notes
 
-The staff admin panel (`panel.html`, `js/panel.js`) is not in this initial extraction. To add it:
+The panel lives at `/panel.html` and uses DRF token authentication. Flow:
 
-1. Extract `application/templates/panel/index.html` from the backend repo into a new `panel.html`
-   here (drop `{% extends %}` / `{% static %}` tags, inline the Bootstrap `<head>`, same pattern
-   as `index.html`).
-2. Copy `application/static/js/panel.js` into `js/panel.js` (no changes needed — it uses the same
-   `apiJson` helper and reads the token from `sessionStorage`).
-3. Link from the applicant portal navbar (already present: *Staff panel* button points to
-   `panel.html`).
+1. **Log in** — `POST /admin/login/` with `{username, password}`. Server returns `{ token, user }`;
+   the token is stored in `sessionStorage` (not `localStorage`, to reduce XSS exposure).
+2. **Every subsequent request** sends `Authorization: Token <token>`. If any admin call returns
+   `401`, the token is cleared and the user is bounced back to login.
+3. **Applicants list** — `GET /admin/applications/` (paginated, 25/page). Supports `?search=` for
+   name/email/institution filter and `?page=` for pagination. Row-checkbox → bulk action toolbar
+   (select / reject / pending / delete). Row-click → detail.
+4. **Detail** — `GET /admin/applications/{id}/`. Shows profile fields, a CV download link,
+   decision controls (`PATCH /admin/applications/{id}/`), delete
+   (`DELETE /admin/applications/{id}/`), and a Quiz breakdown tab
+   (`GET /admin/applications/{id}/quiz/`).
+5. **Log out** — `POST /admin/logout/` (invalidates the token), then clears `sessionStorage` and
+   returns to login.
 
-That's a separate task — do it once the applicant flow is stable and CORS is confirmed working.
+Only accounts with `is_staff = true` can log in. Create them on the backend with
+`manage.py createsuperuser`. The panel uses a dark navbar theme to visually distinguish staff
+context from the public applicant portal.
