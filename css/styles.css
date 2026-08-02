@@ -5,10 +5,10 @@
    ========================================================================= */
 
 :root {
-  /* Palette — AdminCa-inspired */
-  --brand:            #5C6BC0;
-  --brand-dark:       #4a5ab9;
-  --brand-tint:       #eef0fa;
+  /* Palette — warm gold on Poppins */
+  --brand:            #cfa54a;
+  --brand-dark:       #b48a2e;
+  --brand-tint:       #faf3e0;
   --success:          #18C5A9;
   --success-dark:     #14a891;
   --danger:           #f75a5f;
@@ -21,8 +21,8 @@
   /* Shadows */
   --shadow-card:      0 8px 30px rgba(53, 73, 95, 0.08);
   --shadow-input:     0 3px 20px rgba(53, 73, 95, 0.08);
-  --shadow-btn:       0 6px 20px rgba(92, 107, 192, 0.35);
-  --shadow-btn-hover: 0 10px 25px rgba(92, 107, 192, 0.45);
+  --shadow-btn:       0 6px 20px rgba(207, 165, 74, 0.35);
+  --shadow-btn-hover: 0 10px 25px rgba(207, 165, 74, 0.45);
   --shadow-float:     0 5px 20px rgba(214, 222, 228, 0.9);
 
   /* Rhythm */
@@ -32,7 +32,7 @@
 
   /* Bootstrap variable overrides (so BS utilities pick up the new brand) */
   --bs-primary:       var(--brand);
-  --bs-primary-rgb:   92, 107, 192;
+  --bs-primary-rgb:   207, 165, 74;
   --bs-body-color:    var(--body);
   --bs-body-font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
@@ -173,7 +173,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; color: #2c3a4d; }
 }
 .form-control:focus, .form-select:focus {
   border-color: var(--brand) !important;
-  box-shadow: 0 0 0 4px rgba(92, 107, 192, 0.12) !important;
+  box-shadow: 0 0 0 4px rgba(207, 165, 74, 0.12) !important;
   outline: none;
 }
 .form-control::placeholder { color: #b7c0cf; }
@@ -299,7 +299,7 @@ input[type="file"].form-control::-webkit-file-upload-button {
   border-color: var(--brand) !important;
   background: var(--brand-tint);
   color: var(--brand);
-  box-shadow: 0 0 0 4px rgba(92, 107, 192, 0.15);
+  box-shadow: 0 0 0 4px rgba(207, 165, 74, 0.15);
 }
 
 /* -------------------------------------------------------------- Alerts */
@@ -346,7 +346,7 @@ body.landing { background: #ffffff; }
   overflow: hidden;
   padding: 5rem 0 4.5rem;
   background:
-    radial-gradient(1200px 400px at 50% -100px, rgba(92,107,192,0.18), transparent 60%),
+    radial-gradient(1200px 400px at 50% -100px, rgba(207,165,74,0.18), transparent 60%),
     linear-gradient(180deg, var(--brand-tint) 0%, #ffffff 100%);
 }
 .hero-inner {
@@ -361,7 +361,7 @@ body.landing { background: #ffffff; }
   letter-spacing: -0.025em;
   line-height: 1.12;
   margin: .75rem 0 1.25rem;
-  color: #1f2a3d;
+  color: #2e2822;
 }
 .hero-tagline {
   font-size: 1.15rem;
@@ -377,7 +377,7 @@ body.landing { background: #ffffff; }
   inset: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(circle at 12% 78%, rgba(92,107,192,0.10) 0, transparent 40%),
+    radial-gradient(circle at 12% 78%, rgba(207,165,74,0.10) 0, transparent 40%),
     radial-gradient(circle at 90% 22%, rgba(24,197,169,0.10) 0, transparent 40%);
 }
 
@@ -447,7 +447,7 @@ body.landing { background: #ffffff; }
 }
 .topic-item strong {
   display: block;
-  color: #1f2a3d;
+  color: #2e2822;
   font-weight: 600;
   margin-bottom: .25rem;
 }
@@ -525,12 +525,12 @@ body.panel { background: var(--page-bg); }
 
 /* -------------------------------------------------------------- Dark navbar */
 .navbar-panel {
-  background: linear-gradient(135deg, #1f2a3d 0%, #2c3a56 100%) !important;
+  background: linear-gradient(135deg, #2e2822 0%, #3d3427 100%) !important;
   border: 0 !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 .navbar-panel .navbar-brand { color: #fff !important; }
-.navbar-panel .navbar-brand .text-primary { color: #a5b1e8 !important; }
+.navbar-panel .navbar-brand .text-primary { color: #e6ccaa !important; }
 .navbar-panel .btn-outline-light {
   border-color: rgba(255, 255, 255, 0.25);
   color: #fff;
@@ -596,7 +596,7 @@ body.panel { background: var(--page-bg); }
   border-color: var(--brand);
 }
 .applicants-table .form-check-input:focus {
-  box-shadow: 0 0 0 3px rgba(92, 107, 192, 0.2);
+  box-shadow: 0 0 0 3px rgba(207, 165, 74, 0.2);
   border-color: var(--brand);
 }
 
