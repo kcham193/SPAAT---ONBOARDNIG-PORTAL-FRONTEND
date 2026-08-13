@@ -67,9 +67,61 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; color: #2c3a4d; }
   background: var(--card-bg) !important;
   border-bottom: 1px solid var(--border-soft) !important;
   box-shadow: 0 1px 10px rgba(53, 73, 95, 0.04);
+  padding-top: .65rem;
+  padding-bottom: .65rem;
 }
 .navbar-brand { color: #2c3a4d !important; letter-spacing: -0.01em; }
 .navbar-brand .text-primary { color: var(--brand) !important; }
+
+/* Brand logos in the navbar (IHI + MAP) */
+.brand-logo {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+.brand-logo-ihi { }                                /* ~3:1 aspect */
+.brand-logo-map { max-width: 130px; }              /* wide — cap width */
+.brand-divider {
+  display: inline-block;
+  width: 1px;
+  height: 30px;
+  background: var(--border-soft);
+  align-self: center;
+}
+.brand-text {
+  color: #2c3a4d;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-size: 1rem;
+}
+
+/* Chip-style logo backdrop for the DARK panel navbar (keeps white logos
+   from clashing with the dark background). */
+.brand-logo-chip {
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  height: 42px;
+}
+.brand-divider-dark { background: rgba(255, 255, 255, 0.2); }
+.brand-text-light {
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-size: 1rem;
+}
+
+@media (max-width: 767.98px) {
+  .brand-logo { height: 30px; }
+  .brand-logo-chip { height: 34px; padding: 3px 6px; }
+  .brand-logo-map { max-width: 100px; }
+}
+@media (max-width: 400px) {
+  .brand-logo { height: 26px; }
+  .brand-logo-chip { height: 30px; }
+  .brand-logo-map { max-width: 82px; }
+}
 
 /* -------------------------------------------------------------- Cards */
 .card {
