@@ -40,7 +40,7 @@ in-progress session.
 The production backend URL is hard-coded in [`js/api.js`](js/api.js):
 
 ```js
-const PROD_API = "https://vedas.pythonanywhere.com/api";
+const PROD_API = "https://mapdet.pythonanywhere.com/api";
 ```
 
 The dev URL (`http://127.0.0.1:8000/api`) is used automatically when you open the site from

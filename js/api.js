@@ -4,7 +4,7 @@
 
 // Backend base URL. Change PYTHONANYWHERE_USERNAME to the actual production host.
 // Local dev falls back to a Django dev server on 127.0.0.1:8000.
-const PROD_API = "https://vedas.pythonanywhere.com/api";
+const PROD_API = "https://mapdet.pythonanywhere.com/api";
 const DEV_API  = "http://127.0.0.1:8000/api";
 
 const API = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
