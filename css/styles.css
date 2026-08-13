@@ -445,6 +445,17 @@ body.landing { background: #ffffff; }
   margin: .5rem 0 .75rem;
 }
 
+/* All-caps About heading — positive tracking reads better than the tight
+   negative spacing default headings use. */
+.about-heading {
+  font-size: clamp(1.4rem, 1.5vw + 1rem, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  color: var(--brand-dark);
+  margin: .25rem 0 1rem;
+}
+
 /* -------------------------------------------------------------- Feature cards */
 .feature-card {
   background: #fff;
