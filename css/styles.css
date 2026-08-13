@@ -153,6 +153,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; color: #2c3a4d; }
   margin: -2.5rem auto 1rem;
 }
 .auth-head-icon.success { color: var(--success); }
+.auth-head-icon.muted   { color: var(--muted); }
 
 /* -------------------------------------------------------------- Form inputs
    "form-control-air" — soft shadow, no border. */
@@ -312,7 +313,6 @@ input[type="file"].form-control::-webkit-file-upload-button {
 .alert-danger { background: #fdecee; color: #c9384c; }
 
 /* -------------------------------------------------------------- Result screen */
-#screen-result h3 { color: var(--success); }
 #screen-result .display-4 {
   color: var(--brand);
   font-weight: 700;
@@ -539,6 +539,22 @@ body.panel { background: var(--page-bg); }
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.5);
   color: #fff;
+}
+
+/* -------------------------------------------------------------- Status filter dropdown */
+.status-filter {
+  min-width: 190px;
+  max-width: 220px;
+  padding: .5rem 2rem .5rem 1rem !important;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: var(--radius) !important;
+  background-color: #fff;
+  font-size: .9rem;
+  color: var(--body);
+}
+.status-filter:focus {
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 3px rgba(207, 165, 74, 0.15) !important;
 }
 
 /* -------------------------------------------------------------- Search input group */

@@ -77,9 +77,17 @@
         <h4 class="mb-1">Applicants</h4>
         <p class="text-muted small mb-0" id="list-count">Loading…</p>
       </div>
-      <div class="input-group search-group" style="max-width:340px">
-        <span class="input-group-text"><i class="bi bi-search"></i></span>
-        <input class="form-control" id="search-input" placeholder="Name, email or institution…">
+      <div class="d-flex gap-2 flex-wrap">
+        <select class="form-select status-filter" id="status-filter" title="Filter by knowledge-check outcome">
+          <option value="">All outcomes</option>
+          <option value="pass">Passed the quiz</option>
+          <option value="fail">Failed the quiz</option>
+          <option value="pending">Quiz not finished</option>
+        </select>
+        <div class="input-group search-group" style="max-width:340px">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input class="form-control" id="search-input" placeholder="Name, email or institution…">
+        </div>
       </div>
     </div>
 
@@ -106,12 +114,13 @@
               <th>Country</th>
               <th>Quiz</th>
               <th class="text-center">Score</th>
+              <th>Outcome</th>
               <th>Decision</th>
               <th></th>
             </tr>
           </thead>
           <tbody id="applicants-body">
-            <tr><td colspan="9" class="text-center text-muted py-4">Loading…</td></tr>
+            <tr><td colspan="10" class="text-center text-muted py-4">Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -141,19 +150,26 @@
       </a>
     </div>
 
-    <!-- Decision controls -->
+    <!-- Outcome + decision controls -->
     <div class="alert alert-danger d-none" id="detail-alert"></div>
-    <div class="decision-strip d-flex align-items-center flex-wrap gap-2 mb-4">
-      <span class="text-muted">Decision:</span>
-      <span id="d-decision"></span>
-      <div class="btn-group btn-group-sm ms-2">
-        <button class="btn btn-outline-success" data-decision="select"><i class="bi bi-check2"></i> Select</button>
-        <button class="btn btn-outline-danger" data-decision="reject"><i class="bi bi-x"></i> Reject</button>
-        <button class="btn btn-outline-secondary" data-decision="pending">Pending</button>
+    <div class="decision-strip mb-4">
+      <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+        <span class="text-muted">Outcome:</span>
+        <span id="d-status"></span>
+        <span class="text-muted small ms-1" id="d-score-info"></span>
       </div>
-      <button class="btn btn-sm btn-outline-danger ms-auto" id="d-delete">
-        <i class="bi bi-trash"></i> Delete applicant
-      </button>
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <span class="text-muted">Decision:</span>
+        <span id="d-decision"></span>
+        <div class="btn-group btn-group-sm ms-2">
+          <button class="btn btn-outline-success" data-decision="select"><i class="bi bi-check2"></i> Select</button>
+          <button class="btn btn-outline-danger" data-decision="reject"><i class="bi bi-x"></i> Reject</button>
+          <button class="btn btn-outline-secondary" data-decision="pending">Pending</button>
+        </div>
+        <button class="btn btn-sm btn-outline-danger ms-auto" id="d-delete">
+          <i class="bi bi-trash"></i> Delete applicant
+        </button>
+      </div>
     </div>
 
     <ul class="nav nav-tabs mb-3" role="tablist">

@@ -36,7 +36,7 @@
   <ul class="stepper" id="steps">
     <li class="step active" data-step="form">
       <span class="step-circle">1</span>
-      <span class="step-label">Application</span>
+      <span class="step-label">Details</span>
     </li>
     <li class="step" data-step="intro">
       <span class="step-circle">2</span>
@@ -50,14 +50,21 @@
       <span class="step-circle">4</span>
       <span class="step-label">Result</span>
     </li>
+    <li class="step" data-step="final">
+      <span class="step-circle">5</span>
+      <span class="step-label">Submit</span>
+    </li>
   </ul>
 
-  <!-- ============ STEP 1: APPLICATION FORM ============ -->
+  <!-- ============ STEP 1: DETAILS FORM (no CV / motivation / expectations) ============ -->
   <section id="screen-form" class="screen">
     <div class="card">
       <div class="card-body">
-        <h4 class="mb-1">Application form</h4>
-        <p class="text-muted small mb-4">All fields are required unless marked optional.</p>
+        <h4 class="mb-1">Your details</h4>
+        <p class="text-muted small mb-4">
+          All fields are required. Next you'll take a short knowledge check —
+          your CV and motivation are collected at the end.
+        </p>
 
         <div class="alert alert-danger d-none" id="form-alert"></div>
 
@@ -159,26 +166,11 @@
               </select>
               <div class="field-error" data-error="bayesian_knowledge"></div>
             </div>
-            <div class="col-12">
-              <label class="form-label">Motivation <span class="text-muted">(optional)</span></label>
-              <textarea class="form-control form-control-air" name="motivation" rows="3"></textarea>
-              <div class="field-error" data-error="motivation"></div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Expectations <span class="text-muted">(optional)</span></label>
-              <textarea class="form-control form-control-air" name="expectations" rows="3"></textarea>
-              <div class="field-error" data-error="expectations"></div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">CV upload <span class="text-muted">(PDF/DOC)</span></label>
-              <input type="file" class="form-control" name="cv" accept=".pdf,.doc,.docx" required>
-              <div class="field-error" data-error="cv"></div>
-            </div>
           </div>
 
           <div class="d-grid mt-4">
             <button class="btn btn-primary btn-lg" type="submit" id="submit-application">
-              Submit application <i class="bi bi-arrow-right ms-1"></i>
+              Next <i class="bi bi-arrow-right ms-1"></i>
             </button>
           </div>
         </form>
@@ -194,8 +186,8 @@
     <div class="card">
       <div class="card-body text-center">
         <h4 class="mt-1">You're ready for the knowledge check</h4>
-        <p class="text-muted mb-4">A short, timed quiz to complete your application.</p>
-        <ul class="list-unstyled text-muted mb-4 mx-auto" style="max-width:360px">
+        <p class="text-muted mb-4">A short, timed quiz to unlock the final submission.</p>
+        <ul class="list-unstyled text-muted mb-4 mx-auto" style="max-width:400px">
           <li class="mb-2"><i class="bi bi-check2 text-primary me-2"></i>One question at a time.</li>
           <li class="mb-2"><i class="bi bi-check2 text-primary me-2"></i>Countdown runs per question — answer before it ends.</li>
           <li class="mb-2"><i class="bi bi-check2 text-primary me-2"></i>You cannot go back, and the quiz can't be restarted.</li>
@@ -234,14 +226,76 @@
   <!-- ============ STEP 4: RESULT ============ -->
   <section id="screen-result" class="screen d-none">
     <div class="text-center">
-      <span class="auth-head-icon success"><i class="bi bi-patch-check-fill"></i></span>
+      <span class="auth-head-icon success"><i class="bi bi-patch-check-fill" id="r-icon"></i></span>
     </div>
     <div class="card">
       <div class="card-body text-center">
-        <h3 class="mt-1">Quiz complete</h3>
-        <p class="text-muted">Thank you for completing your application.</p>
+        <h3 class="mt-1" id="r-heading">Quiz complete</h3>
         <div class="display-4 fw-bold my-3"><span id="r-score">0</span> / <span id="r-total">0</span></div>
+        <p class="text-muted mb-2" id="r-message"></p>
         <p class="text-muted small mb-0" id="r-completed"></p>
+        <div class="d-grid mt-4 d-none" id="r-continue-wrap">
+          <button class="btn btn-primary btn-lg" id="go-final">
+            Continue to final step <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 5: FINAL SUBMISSION (only reached if passed) ============ -->
+  <section id="screen-final" class="screen d-none">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="mb-1">Final step</h4>
+        <p class="text-muted small mb-4">
+          Tell us why you're applying and upload your CV to complete your application.
+        </p>
+
+        <div class="alert alert-danger d-none" id="final-alert"></div>
+
+        <form id="final-form" novalidate>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Motivation</label>
+              <textarea class="form-control form-control-air" name="motivation" rows="4" required
+                        placeholder="Why do you want to join the program?"></textarea>
+              <div class="field-error" data-error="motivation"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Expectations</label>
+              <textarea class="form-control form-control-air" name="expectations" rows="4" required
+                        placeholder="What do you hope to gain from this program?"></textarea>
+              <div class="field-error" data-error="expectations"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">CV upload <span class="text-muted">(PDF/DOC)</span></label>
+              <input type="file" class="form-control" name="cv" accept=".pdf,.doc,.docx" required>
+              <div class="field-error" data-error="cv"></div>
+            </div>
+          </div>
+
+          <div class="d-grid mt-4">
+            <button class="btn btn-primary btn-lg" type="submit" id="submit-final">
+              Submit application <i class="bi bi-check2-circle ms-1"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DONE ============ -->
+  <section id="screen-done" class="screen d-none">
+    <div class="text-center">
+      <span class="auth-head-icon success"><i class="bi bi-send-check-fill"></i></span>
+    </div>
+    <div class="card">
+      <div class="card-body text-center">
+        <h3 class="mt-1">Application submitted</h3>
+        <p class="text-muted mb-0">
+          Thank you — your application and CV have been received. We'll be in touch by email.
+        </p>
       </div>
     </div>
   </section>

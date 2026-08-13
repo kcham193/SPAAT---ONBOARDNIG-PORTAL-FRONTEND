@@ -68,9 +68,11 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
 // ------------------------------------------------------------------ List
 let currentPage = 1;
 let currentSearch = "";
+let currentStatus = "";   // "" | "pass" | "fail" | "pending"
 let pageState = { next: null, previous: null, count: 0 };
 
 const searchInput = document.getElementById("search-input");
+const statusFilter = document.getElementById("status-filter");
 const applicantsBody = document.getElementById("applicants-body");
 
 const QUIZ_BADGE = {
@@ -79,6 +81,14 @@ const QUIZ_BADGE = {
   completed:   '<span class="badge bg-success-soft">Completed</span>',
 };
 
+// Knowledge-check outcome (server-derived from the quiz score).
+const STATUS_BADGE = {
+  PENDING: '<span class="badge bg-secondary-soft">Pending</span>',
+  PASS:    '<span class="badge bg-success-soft"><i class="bi bi-check2"></i> Passed</span>',
+  FAIL:    '<span class="badge bg-danger-soft"><i class="bi bi-x"></i> Failed</span>',
+};
+
+// Staff-review outcome (set by admins).
 const DECISION_BADGE = {
   PENDING:  '<span class="badge bg-secondary-soft">Pending</span>',
   SELECTED: '<span class="badge bg-success-soft">Selected</span>',
@@ -98,9 +108,10 @@ async function loadList() {
   updateBulkBar();
   listAlert.classList.add("d-none");
   document.getElementById("select-all").checked = false;
-  applicantsBody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">Loading…</td></tr>`;
+  applicantsBody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">Loading…</td></tr>`;
   const params = new URLSearchParams();
   if (currentSearch) params.set("search", currentSearch);
+  if (currentStatus) params.set("status", currentStatus);
   if (currentPage > 1) params.set("page", currentPage);
   const qs = params.toString() ? `?${params}` : "";
   try {
@@ -110,14 +121,14 @@ async function loadList() {
     updatePager();
   } catch (err) {
     if (err.status !== 401) {
-      applicantsBody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">Failed to load applicants.</td></tr>`;
+      applicantsBody.innerHTML = `<tr><td colspan="10" class="text-center text-danger py-4">Failed to load applicants.</td></tr>`;
     }
   }
 }
 
 function renderList(rows) {
   if (!rows.length) {
-    applicantsBody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No applicants found.</td></tr>`;
+    applicantsBody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">No applicants found.</td></tr>`;
     return;
   }
   applicantsBody.innerHTML = "";
@@ -125,6 +136,7 @@ function renderList(rows) {
     const tr = document.createElement("tr");
     tr.className = "cursor-pointer";
     const score = r.score != null ? `${r.score} / ${r.total}` : "—";
+    const status = STATUS_BADGE[r.status] || esc(r.status || "");
     const decision = DECISION_BADGE[r.decision] || esc(r.decision || "");
     tr.innerHTML = `
       <td class="select-cell"><input type="checkbox" class="form-check-input row-check" value="${r.id}"></td>
@@ -134,6 +146,7 @@ function renderList(rows) {
       <td>${esc(r.country_of_residence || "")}</td>
       <td>${QUIZ_BADGE[r.quiz_status] || esc(r.quiz_status)}</td>
       <td class="text-center">${score}</td>
+      <td>${status}</td>
       <td>${decision}</td>
       <td class="text-end"><i class="bi bi-chevron-right text-muted"></i></td>`;
 
@@ -216,6 +229,13 @@ searchInput.addEventListener("input", (e) => {
   }, 300);
 });
 
+// Status filter (server-side)
+statusFilter.addEventListener("change", (e) => {
+  currentStatus = e.target.value;   // "" | "pass" | "fail" | "pending"
+  currentPage = 1;
+  loadList();
+});
+
 // ------------------------------------------------------------------ Detail
 const FIELD_LABELS = {
   phone: "Phone", nationality: "Nationality", country_of_residence: "Country of residence",
@@ -223,6 +243,7 @@ const FIELD_LABELS = {
   role: "Role", education: "Education", r_experience: "R experience",
   bayesian_knowledge: "Bayesian knowledge", motivation: "Motivation",
   expectations: "Expectations", created_at: "Applied at",
+  final_submitted_at: "Final submission at",
 };
 
 let currentDetailId = null;
@@ -249,6 +270,17 @@ async function loadDetail(id) {
 function renderDetail(a) {
   document.getElementById("d-name").textContent = `${a.first_name} ${a.last_name}`;
   document.getElementById("d-email").textContent = a.email;
+
+  // Knowledge-check outcome + score
+  document.getElementById("d-status").innerHTML =
+    STATUS_BADGE[a.status] || esc(a.status || "");
+  const scoreParts = [];
+  if (a.score != null && a.total != null) scoreParts.push(`${a.score} / ${a.total}`);
+  if (a.pass_mark != null) scoreParts.push(`pass mark: ${a.pass_mark}`);
+  document.getElementById("d-score-info").textContent =
+    scoreParts.length ? "· " + scoreParts.join(" · ") : "";
+
+  // Staff decision
   document.getElementById("d-decision").innerHTML =
     DECISION_BADGE[a.decision] || esc(a.decision || "");
 
@@ -261,7 +293,9 @@ function renderDetail(a) {
   Object.entries(FIELD_LABELS).forEach(([key, label]) => {
     if (!(key in a)) return;
     let val = a[key];
-    if (key === "created_at" && val) val = new Date(val).toLocaleString();
+    if ((key === "created_at" || key === "final_submitted_at") && val) {
+      val = new Date(val).toLocaleString();
+    }
     dl.insertAdjacentHTML("beforeend",
       `<dt class="col-sm-3 text-muted">${label}</dt>
        <dd class="col-sm-9">${val ? esc(String(val)) : "<span class='text-muted'>—</span>"}</dd>`);

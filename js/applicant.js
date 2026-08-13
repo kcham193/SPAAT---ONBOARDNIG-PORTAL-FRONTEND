@@ -1,5 +1,7 @@
-// Applicant journey state machine (see backend README section 2).
-// Persisted state lets us resume a quiz across reloads / tab close.
+// Applicant journey state machine (see backend README_FRONTEND section 2).
+// Two-stage flow: Details -> Quiz -> Result -> (if passed) Finalize.
+// Persisted state lets us resume across reloads / tab close, but we always
+// re-validate with /status/ before trusting stored ids.
 const LS = {
   get appId()  { return localStorage.getItem("application_id"); },
   set appId(v) { v ? localStorage.setItem("application_id", v) : localStorage.removeItem("application_id"); },
@@ -12,62 +14,74 @@ const screens = {
   intro:    document.getElementById("screen-intro"),
   question: document.getElementById("screen-question"),
   result:   document.getElementById("screen-result"),
+  final:    document.getElementById("screen-final"),
+  done:     document.getElementById("screen-done"),
 };
 
-const STEP_ORDER = ["form", "intro", "question", "result"];
+// Stepper progression. "done" leaves the stepper lit on "final" — same step,
+// task complete.
+const STEP_ORDER = ["form", "intro", "question", "result", "final"];
 
 function showScreen(name) {
   Object.entries(screens).forEach(([k, el]) => el.classList.toggle("d-none", k !== name));
-  const currentIdx = STEP_ORDER.indexOf(name);
+  const active = name === "done" ? "final" : name;
+  const currentIdx = STEP_ORDER.indexOf(active);
   document.querySelectorAll("#steps [data-step]").forEach((b) => {
     const idx = STEP_ORDER.indexOf(b.dataset.step);
     b.classList.toggle("active", idx === currentIdx);
-    b.classList.toggle("done", idx >= 0 && idx < currentIdx);
+    b.classList.toggle("done", idx >= 0 && (idx < currentIdx || name === "done"));
   });
 }
 
-// ---------------------------------------------------------------- Step 1: form
+// ---------------------------------------------------------------- Alerts + errors
 const form = document.getElementById("application-form");
 const formAlert = document.getElementById("form-alert");
+const finalAlert = document.getElementById("final-alert");
 
 function clearFieldErrors() {
   document.querySelectorAll("[data-error]").forEach((el) => (el.textContent = ""));
   formAlert.classList.add("d-none");
+  finalAlert.classList.add("d-none");
 }
 
-function renderFieldErrors(data) {
+function renderFieldErrors(data, alertBox) {
   // data is a { field: [messages] } map (or {detail: "..."}).
+  const box = alertBox || formAlert;
+  const fail = (text) => { box.textContent = text; box.classList.remove("d-none"); };
   if (data && typeof data === "object" && !Array.isArray(data)) {
     let handledAny = false;
     Object.entries(data).forEach(([field, msgs]) => {
-      const box = document.querySelector(`[data-error="${field}"]`);
+      const target = document.querySelector(`[data-error="${field}"]`);
       const text = Array.isArray(msgs) ? msgs.join(" ") : String(msgs);
-      if (box) { box.textContent = text; handledAny = true; }
-      else if (field === "detail") { formAlert.textContent = text; formAlert.classList.remove("d-none"); handledAny = true; }
+      if (target) { target.textContent = text; handledAny = true; }
+      else if (field === "detail") { fail(text); handledAny = true; }
     });
-    if (!handledAny) { formAlert.textContent = JSON.stringify(data); formAlert.classList.remove("d-none"); }
+    if (!handledAny) fail(JSON.stringify(data));
   } else {
-    formAlert.textContent = "Something went wrong submitting your application.";
-    formAlert.classList.remove("d-none");
+    fail("Something went wrong. Please try again.");
   }
 }
 
+// ---------------------------------------------------------------- Step 1: details
+// The server accepts JSON here (no file upload in step 1), so we send JSON —
+// smaller and easier to debug.
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   clearFieldErrors();
   const btn = document.getElementById("submit-application");
   btn.disabled = true;
-  btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Submitting…`;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Saving…`;
   try {
-    const app = await apiForm("POST", "/applications/", new FormData(form));
+    const payload = Object.fromEntries(new FormData(form).entries());
+    const app = await apiJson("POST", "/applications/", payload);
     LS.appId = app.id;
     LS.sessId = null;
     showScreen("intro");
   } catch (err) {
-    renderFieldErrors(err.data);
+    renderFieldErrors(err.data, formAlert);
   } finally {
     btn.disabled = false;
-    btn.innerHTML = `Submit application <i class="bi bi-arrow-right"></i>`;
+    btn.innerHTML = `Next <i class="bi bi-arrow-right ms-1"></i>`;
   }
 });
 
@@ -82,7 +96,14 @@ document.getElementById("start-quiz").addEventListener("click", async (e) => {
     LS.sessId = q.session;
     renderQuestion(q);
   } catch (err) {
-    // e.g. "A quiz session already exists" -> try to resume instead.
+    if (err.status === 404) {
+      // Stored application no longer exists — send the applicant back to Step 1.
+      resetJourney();
+      showScreen("form");
+      formAlert.textContent = "We couldn't find your application. Please fill in your details again.";
+      formAlert.classList.remove("d-none");
+      return;
+    }
     const msg = err.data && (err.data.detail || JSON.stringify(err.data));
     introAlert.textContent = msg || "Could not start the quiz.";
     introAlert.classList.remove("d-none");
@@ -170,8 +191,6 @@ async function submitAnswer(auto) {
   stopCountdown();
   els.submit.disabled = true;
 
-  // On a manual submit we send the chosen option; on a timeout we send whatever
-  // was selected (or empty) -- the server decides it timed out regardless.
   const answer = selectedAnswer || "";
   try {
     const res = await apiJson("POST", `/quiz/${LS.sessId}/answer/`, { answer });
@@ -194,28 +213,109 @@ function showResult(result) {
   showScreen("result");
   document.getElementById("r-score").textContent = result.score;
   document.getElementById("r-total").textContent = result.total;
-  const el = document.getElementById("r-completed");
-  el.textContent = result.completed_at
+
+  const icon = document.getElementById("r-icon");
+  const iconWrap = icon.parentElement;
+  const message = document.getElementById("r-message");
+  const continueWrap = document.getElementById("r-continue-wrap");
+
+  const unlocked = result.passed && !result.final_submitted;
+  continueWrap.classList.toggle("d-none", !unlocked);
+
+  if (result.final_submitted) {
+    icon.className = "bi bi-send-check-fill";
+    iconWrap.className = "auth-head-icon success";
+    message.textContent = "Your application has already been submitted.";
+  } else if (result.passed) {
+    icon.className = "bi bi-patch-check-fill";
+    iconWrap.className = "auth-head-icon success";
+    message.textContent =
+      "You've met the required score. One last step: your motivation, expectations and CV.";
+  } else {
+    icon.className = "bi bi-info-circle-fill";
+    iconWrap.className = "auth-head-icon muted";
+    message.textContent =
+      `A score of at least ${result.pass_mark} is needed to continue. ` +
+      `Thank you for your interest.`;
+  }
+
+  document.getElementById("r-completed").textContent = result.completed_at
     ? `Completed ${new Date(result.completed_at).toLocaleString()}`
     : "";
-  // Journey is over -- clear the resume state so a reload starts fresh.
-  LS.sessId = null;
-  LS.appId = null;
+
+  // Keep resume state while the final step is still open so a reload lands the
+  // applicant back on this screen or the final form. Otherwise the journey is
+  // done — clear it so a fresh visit starts at Step 1.
+  if (unlocked) {
+    if (result.application) LS.appId = result.application;
+    if (result.id) LS.sessId = result.id;
+  } else {
+    LS.sessId = null;
+    LS.appId = null;
+  }
 }
 
-// ---------------------------------------------------------------- Resume on load
+// ------------------------------------------------- Step 5: final submission
+document.getElementById("go-final").addEventListener("click", () => {
+  clearFieldErrors();
+  showScreen("final");
+});
+
+const finalForm = document.getElementById("final-form");
+finalForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearFieldErrors();
+  const btn = document.getElementById("submit-final");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Submitting…`;
+  try {
+    await apiForm("POST", `/applications/${LS.appId}/finalize/`, new FormData(finalForm));
+    showScreen("done");
+    LS.appId = null;
+    LS.sessId = null;
+  } catch (err) {
+    renderFieldErrors(err.data, finalAlert);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `Submit application <i class="bi bi-check2-circle ms-1"></i>`;
+  }
+});
+
+// ---------------------------------------------------------------- Boot / resume
+function resetJourney() {
+  LS.appId = null;
+  LS.sessId = null;
+}
+
 (async function boot() {
-  // A response from /current/ is either a question payload (has .question) or a
-  // result payload (has .score but no .question).
-  if (LS.sessId) {
+  if (!LS.appId) { resetJourney(); showScreen("form"); return; }
+
+  // Always re-validate with the server before resuming — the stored application
+  // may have been deleted, and we don't want to leave the user stuck on a
+  // journey the backend no longer knows about.
+  let state;
+  try {
+    state = await apiJson("GET", `/applications/${LS.appId}/status/`);
+  } catch (err) {
+    resetJourney();
+    showScreen("form");
+    return;
+  }
+
+  if (state.final_submitted) { resetJourney(); showScreen("done"); return; }
+
+  if (state.quiz) {
+    LS.sessId = state.quiz.id;
+    if (state.quiz.completed_at) { showResult(state.quiz); return; }
+    // Mid-quiz: /current/ returns either a question payload or the result.
     try {
       const data = await apiJson("GET", `/quiz/${LS.sessId}/current/`);
       if (data.question) { renderQuestion(data); return; }
       if (typeof data.score === "number") { showResult(data); return; }
     } catch (err) {
-      LS.sessId = null; // stale/invalid session -> fall through
+      LS.sessId = null; // fall through to the intro screen
     }
   }
-  if (LS.appId) { showScreen("intro"); return; }
-  showScreen("form");
+
+  showScreen("intro");
 })();
