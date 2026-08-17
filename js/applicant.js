@@ -1,421 +1,498 @@
-// Applicant journey state machine (see backend README_FRONTEND).
-// Six visible steps + prep splash + terminal Ineligible / Done screens.
-//   1. Details       (POST /applications/)
-//   2. Eligibility   (POST /applications/{id}/eligibility/) — server may reject
-//   3. Experience    (POST /applications/{id}/experience/)
-//   4. Honesty       (GET  /applications/{id}/claims/    → shuffled function list
-//                     POST /applications/{id}/claims/    with answers)
-//   5. Quiz          (POST /applications/{id}/quiz/start/, POST /quiz/{s}/answer/)
-//   6. Submit        (POST /applications/{id}/finalize/) — written prompts + CV
-// Boot re-validates with /status/ so stale ids don't strand the user.
-const LS = {
-  get appId()  { return localStorage.getItem("application_id"); },
-  set appId(v) { v ? localStorage.setItem("application_id", v) : localStorage.removeItem("application_id"); },
-  get sessId() { return localStorage.getItem("session_id"); },
-  set sessId(v){ v ? localStorage.setItem("session_id", v) : localStorage.removeItem("session_id"); },
-};
+// Applicant journey: Before you begin -> Details -> Eligibility -> Experience ->
+// Honesty check -> Knowledge check -> Your work -> Submit.
+//
+// Every step is persisted server-side as it is completed, so a reload resumes
+// from the record rather than from anything the browser remembers. localStorage
+// holds only the application id, and even that is validated on load.
 
-// ---------------------------------------------------------------- Portal config
-// Everything the applicant page needs before it renders anything:
-// deadline, word/CV limits, grouped country dropdown, quiz shape.
-// Loaded once on boot; hardcoded fallbacks apply only if /config/ is down.
-let CONFIG = null;
-const CONFIG_FALLBACK = {
+const STEPS = ["Before you begin", "Details", "Eligibility", "Experience",
+               "Honesty check", "Knowledge check", "Your work", "Submit"];
+
+// Deadline, limits, country lists and the shape of the knowledge check, from
+// /api/config/. Nothing user-visible about the rules is written into this file:
+// the page would otherwise promise limits the API does not enforce.
+let CONFIG = {
+  contact_email: "",
   deadline: "",
-  limits: { max_words: 300, cv_max_mb: 5, cv_max_pages: 2 },
+  duration: "about 15 minutes",
+  funding_gate: true,
+  limits: { cv_max_mb: 5, cv_max_pages: 2, max_words: 300 },
+  quiz: { questions: 14, seconds_min: 35, seconds_max: 50, pass_mark: 8 },
   countries: [],
 };
 
-async function loadConfig() {
-  try {
-    CONFIG = await apiJson("GET", "/config/");
-  } catch (err) {
-    console.error("Could not load /api/config/ — falling back to defaults", err);
-    CONFIG = CONFIG_FALLBACK;
-  }
-}
-
-function populateCountrySelects() {
-  const selects = document.querySelectorAll(".country-select");
-  if (!selects.length) return;
-  const groups = (CONFIG && CONFIG.countries) || [];
-  const html = groups.map((g) => `
-    <optgroup label="${g.label}">
-      ${g.countries.map((c) => `<option value="${c}">${c}</option>`).join("")}
-    </optgroup>
-  `).join("");
-  selects.forEach((sel) => sel.insertAdjacentHTML("beforeend", html));
-}
-
-function fillDeadlinePlaceholders() {
-  const deadline = (CONFIG && CONFIG.deadline) || "";
-  document.querySelectorAll("[data-deadline]").forEach((el) => {
-    if (deadline) el.textContent = deadline;
-  });
-  const duration = (CONFIG && CONFIG.duration) || "";
-  document.querySelectorAll("[data-duration]").forEach((el) => {
-    if (duration) el.textContent = duration;
-  });
-  const limits = (CONFIG && CONFIG.limits) || {};
-  if (limits.max_words) {
-    document.querySelectorAll("[data-max-words]").forEach((el) => {
-      // Only replace text inside <span data-max-words>…</span>; leave textarea
-      // attributes alone (those are the fallback for word counters).
-      if (el.tagName === "SPAN") el.textContent = String(limits.max_words);
-    });
-  }
-  if (limits.cv_max_pages != null) {
-    document.querySelectorAll("[data-cv-max-pages]").forEach((el) => (el.textContent = String(limits.cv_max_pages)));
-  }
-  if (limits.cv_max_mb != null) {
-    document.querySelectorAll("[data-cv-max-mb]").forEach((el) => (el.textContent = String(limits.cv_max_mb)));
-  }
-}
-
-// Step 0 checklist: Begin stays disabled until every box is ticked.
-function wireupPrepChecklist() {
-  const list = document.getElementById("prep-checklist");
-  const begin = document.getElementById("begin-application");
-  const printBtn = document.getElementById("print-checklist");
-  if (!list || !begin) return;
-  const boxes = list.querySelectorAll('input[type="checkbox"]');
-  const sync = () => {
-    const allTicked = [...boxes].every((b) => b.checked);
-    begin.disabled = !allTicked;
-  };
-  boxes.forEach((b) => b.addEventListener("change", sync));
-  sync();
-  if (printBtn) printBtn.addEventListener("click", () => window.print());
-}
-
-function configMaxWords() {
-  return (CONFIG && CONFIG.limits && CONFIG.limits.max_words) || 300;
-}
-
-// ---------------------------------------------------------------- Screens + stepper
-const screens = {
-  prep:        document.getElementById("screen-prep"),
-  form:        document.getElementById("screen-form"),
-  eligibility: document.getElementById("screen-eligibility"),
-  ineligible:  document.getElementById("screen-ineligible"),
-  experience:  document.getElementById("screen-experience"),
-  claims:      document.getElementById("screen-claims"),
-  intro:       document.getElementById("screen-intro"),
-  question:    document.getElementById("screen-question"),
-  result:      document.getElementById("screen-result"),
-  final:       document.getElementById("screen-final"),
-  done:        document.getElementById("screen-done"),
+const LS = {
+  get appId()  { return localStorage.getItem("application_id"); },
+  set appId(v) { v ? localStorage.setItem("application_id", v) : localStorage.removeItem("application_id"); },
 };
 
-// Pill row on the stepper (6 items). Matches the reference portal — no
-// separate "Documents" step; motivation + expectations + CV live on the
-// same screen as the written prompts.
-const STEP_ORDER = ["form", "eligibility", "experience", "claims", "quiz", "submit"];
+const stage = document.getElementById("stage");
+const stepsEl = document.getElementById("steps");
 
-// Screens with no pill are prep and ineligible (both terminal-ish).
-const SCREEN_TO_STEP = {
-  form: "form",
-  eligibility: "eligibility",
-  experience: "experience",
-  claims: "claims",
-  intro: "quiz",
-  question: "quiz",
-  result: "quiz",
-  final: "submit",
-  done: "submit",
-};
+let step = 0;
+let claimFunctions = [];   // honesty-check rows, as ordered by the server
+// Not persisted: /status/ hands the session back on reload, so the record stays
+// the single source of truth for where the applicant is.
+let sessionId = null;
 
-function showScreen(name) {
-  Object.entries(screens).forEach(([k, el]) => el.classList.toggle("d-none", k !== name));
-  const active = SCREEN_TO_STEP[name];
-  const currentIdx = active ? STEP_ORDER.indexOf(active) : -1;
-  const allDone = name === "done";
-  document.querySelectorAll("#steps [data-step]").forEach((b) => {
-    const idx = STEP_ORDER.indexOf(b.dataset.step);
-    b.classList.toggle("active", idx === currentIdx && !allDone);
-    b.classList.toggle("done", idx >= 0 && (idx < currentIdx || allDone));
+/* ------------------------------------------------------------------ helpers */
+function renderSteps(visible = true) {
+  stepsEl.innerHTML = visible
+    ? STEPS.map((s, i) =>
+        `<li class="${i === step ? "on" : i < step ? "done" : ""}">${i + 1}. ${s}</li>`).join("")
+    : "";
+}
+
+function show(templateId, atStep) {
+  if (atStep !== undefined) step = atStep;
+  const tpl = document.getElementById(templateId);
+  stage.replaceChildren(tpl.content.cloneNode(true));
+  renderSteps(atStep !== undefined);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  return stage;
+}
+
+const $ = (sel) => stage.querySelector(sel);
+const $$ = (sel) => [...stage.querySelectorAll(sel)];
+
+function alertBox(message) {
+  const box = $("[data-alert]");
+  if (!box) return;
+  box.textContent = message;
+  box.classList.toggle("hidden", !message);
+}
+
+function clearErrors() {
+  $$("[data-error]").forEach((el) => (el.textContent = ""));
+  alertBox("");
+}
+
+// Render DRF's {field: [messages]} map against the fields on screen, falling
+// back to the summary box for anything with nowhere to go.
+function showErrors(data) {
+  clearErrors();
+  if (!data || typeof data !== "object") {
+    alertBox("Something went wrong. Please try again.");
+    return;
+  }
+  const leftovers = [];
+  Object.entries(data).forEach(([field, messages]) => {
+    const text = Array.isArray(messages) ? messages.join(" ") : String(messages);
+    const target = stage.querySelector(`[data-error="${field}"]`);
+    if (target) target.textContent = text;
+    else leftovers.push(field === "detail" ? text : `${field}: ${text}`);
   });
+  if (leftovers.length) alertBox(leftovers.join(" "));
 }
 
-// ---------------------------------------------------------------- Alerts + errors
-const form = document.getElementById("application-form");
-const formAlert = document.getElementById("form-alert");
-const finalAlert = document.getElementById("final-alert");
-const eligAlert = document.getElementById("elig-alert");
-const expAlert = document.getElementById("exp-alert");
-const claimsAlert = document.getElementById("claims-alert");
-const introAlert = document.getElementById("intro-alert");
-
-function clearFieldErrors() {
-  document.querySelectorAll("[data-error]").forEach((el) => (el.textContent = ""));
-  [formAlert, finalAlert, eligAlert, expAlert, claimsAlert].forEach((a) => a && a.classList.add("d-none"));
-}
-
-function renderFieldErrors(err, alertBox) {
-  const box = alertBox || formAlert;
-  // Guarantee text is never empty so the red banner never shows blank.
-  const fail = (text) => {
-    box.textContent = text || "Submission failed. Check the browser console (F12).";
-    box.classList.remove("d-none");
+function busy(button, label) {
+  button.disabled = true;
+  button.dataset.label = button.textContent;
+  button.innerHTML = `<span class="spin"></span>${label}`;
+  return () => {
+    button.disabled = false;
+    button.textContent = button.dataset.label;
   };
-
-  // Log the raw error every time so DevTools has the ground truth even when
-  // the user-facing text is short.
-  console.error("Form submission error:", err);
-
-  // Network / CORS failure — apiJson threw a native TypeError before it
-  // could build an ApiError, so there's no status and no data.
-  if (!err || !("status" in err)) {
-    fail(
-      "Couldn't reach the server (this usually means a CORS or network problem). " +
-      "Open DevTools (F12) → Network tab, re-submit, and share the failing request."
-    );
-    return;
-  }
-
-  const data = err.data;
-  const status = err.status;
-
-  // Standard DRF response: {field: [msgs]} or {detail: "..."}
-  if (data && typeof data === "object" && !Array.isArray(data)) {
-    let handledAny = false;
-    Object.entries(data).forEach(([field, msgs]) => {
-      const target = document.querySelector(`[data-error="${field}"]`);
-      const text = Array.isArray(msgs) ? msgs.join(" ") : String(msgs);
-      if (target) { target.textContent = text; handledAny = true; }
-      else if (field === "detail") { fail(text); handledAny = true; }
-    });
-    if (!handledAny) fail(`Server responded with ${status}: ${JSON.stringify(data)}`);
-    return;
-  }
-
-  // HTML or plain-text error page — surface at least the first line.
-  if (typeof data === "string" && data.trim()) {
-    fail(`Server responded with ${status}: ${data.split("\n")[0].slice(0, 200)}`);
-    return;
-  }
-
-  // No useful body at all.
-  fail(`Server responded with ${status}. Please try again in a moment.`);
 }
 
-// ---------------------------------------------------------------- Prep splash
-const beginBtn = document.getElementById("begin-application");
-if (beginBtn) {
-  beginBtn.addEventListener("click", () => {
-    clearFieldErrors();
-    showScreen("form");
-  });
-}
-
-// ---------------------------------------------------------------- Step 1: details
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  clearFieldErrors();
-  const btn = document.getElementById("submit-application");
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Saving…`;
-  try {
-    const payload = Object.fromEntries(new FormData(form).entries());
-    const app = await apiJson("POST", "/applications/", payload);
-    LS.appId = app.id;
-    LS.sessId = null;
-    showScreen("eligibility");
-  } catch (err) {
-    renderFieldErrors(err, formAlert);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `Next <i class="bi bi-arrow-right ms-1"></i>`;
-  }
-});
-
-// ---------------------------------------------------------------- Option groups
-// Multi-choice pill buttons used by eligibility, experience and claims.
-// Each .quiz-option-group carries the field name in data-group; each option
-// carries the string value in data-value. Clicking marks the group's value.
-function initOptionGroups(scope) {
-  scope.querySelectorAll(".quiz-option-group").forEach((group) => {
-    group.querySelectorAll(".quiz-option").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        group.querySelectorAll(".quiz-option").forEach((o) => o.classList.remove("active"));
-        btn.classList.add("active");
-        group.dataset.value = btn.dataset.value;
-      });
-    });
-  });
-}
-function collectGroupValues(scope) {
+function values(names) {
   const out = {};
-  scope.querySelectorAll(".quiz-option-group").forEach((g) => {
-    if (g.dataset.value) out[g.dataset.group] = g.dataset.value;
+  names.forEach((n) => {
+    const field = stage.querySelector(`[name="${n}"]`);
+    out[n] = field ? field.value.trim() : "";
   });
   return out;
 }
 
-initOptionGroups(document.getElementById("eligibility-form"));
-initOptionGroups(document.getElementById("experience-form"));
-
-// ---------------------------------------------------------------- Step 2: eligibility
-document.getElementById("eligibility-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  clearFieldErrors();
-  const btn = document.getElementById("submit-eligibility");
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Saving…`;
-  try {
-    const payload = collectGroupValues(document.getElementById("eligibility-form"));
-    const res = await apiJson("POST", `/applications/${LS.appId}/eligibility/`, payload);
-    if (res && res.eligible === false) { showIneligible(res.reason); return; }
-    showScreen("experience");
-  } catch (err) {
-    renderFieldErrors(err, eligAlert);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `Continue <i class="bi bi-arrow-right ms-1"></i>`;
-  }
-});
-
-function showIneligible(reason) {
-  document.getElementById("ineligible-reason").textContent = reason || "";
-  showScreen("ineligible");
+// Build a labelled <select> block for the eligibility/experience steps.
+function questionBlock(name, text, options, hint) {
+  return `
+    <label>${text} <span class="req">*</span></label>
+    <select name="${name}">
+      <option value="">Choose…</option>
+      ${options.map((o) => `<option>${o}</option>`).join("")}
+    </select>
+    ${hint ? `<p class="hint">${hint}</p>` : ""}
+    <div class="field-error" data-error="${name}"></div>`;
 }
 
-document.getElementById("change-eligibility").addEventListener("click", () => {
-  clearFieldErrors();
-  showScreen("eligibility");
-});
-
-// ---------------------------------------------------------------- Step 3: experience
-document.getElementById("experience-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  clearFieldErrors();
-  const btn = document.getElementById("submit-experience");
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Saving…`;
-  try {
-    const payload = collectGroupValues(document.getElementById("experience-form"));
-    await apiJson("POST", `/applications/${LS.appId}/experience/`, payload);
-    showScreen("claims");
-    loadClaims();
-  } catch (err) {
-    renderFieldErrors(err, expAlert);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `Continue <i class="bi bi-arrow-right ms-1"></i>`;
-  }
-});
-
-// ---------------------------------------------------------------- Step 4: honesty
-async function loadClaims() {
-  const list = document.getElementById("claims-list");
-  list.innerHTML = `<p class="text-muted text-center my-4">Loading…</p>`;
-  try {
-    const res = await apiJson("GET", `/applications/${LS.appId}/claims/`);
-    list.innerHTML = res.functions.map((name) => `
-      <div class="claim-row mb-3">
-        <p class="mb-2"><code class="claim-name">${name}</code></p>
-        <div class="quiz-option-group" data-group="${name}">
-          <button type="button" class="btn btn-outline-secondary quiz-option" data-value="used">Used</button>
-          <button type="button" class="btn btn-outline-secondary quiz-option" data-value="heard">Heard of</button>
-          <button type="button" class="btn btn-outline-secondary quiz-option" data-value="no">Not familiar</button>
-        </div>
-      </div>
-    `).join("");
-    initOptionGroups(list);
-  } catch (err) {
-    list.innerHTML = `<p class="text-danger text-center my-4">Could not load the questions. Please refresh.</p>`;
-  }
+/* --------------------------------------------- step 0: before you begin */
+// What an applicant needs in front of them. The numbers come from the server's
+// own limits so the tickbox cannot promise something the upload then rejects.
+function requirements() {
+  const { cv_max_pages, cv_max_mb, max_words } = CONFIG.limits;
+  return [
+    {
+      id: "cv",
+      title: `A ${cv_max_pages}-page CV`,
+      detail: `PDF format, at most ${cv_max_pages} pages and ${cv_max_mb} MB, saved on
+               this device ready to upload. Word documents are not accepted.`,
+      confirm: `My CV is a PDF, no more than ${cv_max_pages} pages and under ${cv_max_mb} MB`,
+    },
+    {
+      id: "work",
+      title: "A dataset you have analysed, and some of your own R code",
+      detail: `You will be asked to describe one dataset you analysed yourself, and to
+               paste 5–15 lines of R you wrote in the past year. Have the script open —
+               it is much harder to write from memory in a text box.`,
+      confirm: "I have a dataset in mind and can paste some R code I wrote myself",
+    },
+    {
+      id: "motivation",
+      title: "Your motivation and what you expect from the course",
+      detail: `Up to ${max_words} words each. Worth drafting before you start rather
+               than improvising.`,
+      confirm: "I have thought about why I want to take part and what I expect",
+    },
+    {
+      id: "sitting",
+      title: `${CONFIG.duration}, uninterrupted`,
+      detail: `Part of the application is a timed knowledge check with a countdown per
+               question, which cannot be paused or restarted. Start it when you have a
+               clear run at it.`,
+      confirm: "I can complete this in one sitting",
+    },
+  ];
 }
 
-document.getElementById("submit-claims").addEventListener("click", async () => {
-  clearFieldErrors();
-  const list = document.getElementById("claims-list");
-  const claims = collectGroupValues(list);
-  const btn = document.getElementById("submit-claims");
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Saving…`;
-  try {
-    await apiJson("POST", `/applications/${LS.appId}/claims/`, { claims });
-    showScreen("intro");
-  } catch (err) {
-    renderFieldErrors(err, claimsAlert);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `Continue to the quiz <i class="bi bi-arrow-right ms-1"></i>`;
-  }
-});
+function stepBefore() {
+  show("tpl-before", 0);
+  const items = requirements();
 
-// ---------------------------------------------------------------- Step 5: quiz start
-document.getElementById("start-quiz").addEventListener("click", async (e) => {
-  const btn = e.currentTarget;
-  btn.disabled = true;
-  introAlert.classList.add("d-none");
-  try {
-    const q = await apiJson("POST", `/applications/${LS.appId}/quiz/start/`);
-    LS.sessId = q.session;
-    renderQuestion(q);
-  } catch (err) {
-    if (err.status === 404) {
-      resetJourney();
-      showScreen("prep");
+  $("[data-lead]").textContent =
+    `This takes ${CONFIG.duration}: your background, a short timed knowledge check, ` +
+    `and a few written answers. Everything you need is listed below — gathering it ` +
+    `first is the difference between a strong application and a thin one.`;
+
+  $("[data-cost]").innerHTML =
+    `<strong>There is no fee to attend, but we cannot fund travel, accommodation or
+     subsistence.</strong> If that is a problem, please read the eligibility questions
+     carefully on the next screen: we would rather tell you now than after you have
+     spent ${CONFIG.duration} on an application we could not honour.`;
+
+  $("[data-requirements]").innerHTML = items.map((item) => `
+    <li data-req="${item.id}">
+      <h3>${item.title}</h3>
+      <p>${item.detail}</p>
+      <label class="tick">
+        <input type="checkbox" data-confirm="${item.id}">
+        <span>${item.confirm}</span>
+      </label>
+    </li>`).join("");
+
+  $("[data-deadline]").textContent = CONFIG.deadline
+    ? `Applications close ${CONFIG.deadline}.` : "";
+
+  // The start button stays disabled until every box is ticked -- and the boxes are
+  // worded so that ticking one means going to look at the file.
+  const start = $("[data-next]");
+  const boxes = $$("[data-confirm]");
+  const refresh = () => {
+    const ready = boxes.every((box) => box.checked);
+    start.disabled = !ready;
+    boxes.forEach((box) =>
+      box.closest("[data-req]").classList.toggle("unticked", !box.checked));
+  };
+  boxes.forEach((box) => box.addEventListener("change", refresh));
+  refresh();
+
+  // A meaningful share of applicants read this on a phone and draft their answers
+  // elsewhere. Two lines of code to give them something to work from offline.
+  $("[data-print]").addEventListener("click", () => window.print());
+
+  start.addEventListener("click", () => {
+    if (boxes.some((box) => !box.checked)) {
+      alertBox("Please tick each item once you have it ready.");
       return;
     }
-    if (err.status === 403) {
-      // Ineligible — surface the reason the server stored so the user knows why.
-      const msg = err.data && (err.data.detail || err.data.reason || "");
-      showIneligible(msg || "This application is not eligible to take the quiz.");
+    stepDetails();
+  });
+}
+
+/* ------------------------------------------------------- step 1: details */
+const DETAIL_FIELDS = ["first_name", "last_name", "email", "phone", "country_of_residence",
+  "nationality", "gender", "education", "institution", "institution_type", "role",
+  "r_experience", "bayesian_knowledge"];
+
+// Both country dropdowns, from the server's list: 195 UN member states with
+// Tanzania and its neighbours in a pinned group at the top.
+function fillCountries() {
+  const groups = CONFIG.countries || [];
+  if (!groups.length) return;
+  const options = groups.map((group) => `
+    <optgroup label="${group.label}">
+      ${group.countries.map((c) => `<option>${c}</option>`).join("")}
+    </optgroup>`).join("");
+  $$("[data-countries]").forEach((select) => {
+    select.insertAdjacentHTML("beforeend", options);
+  });
+}
+
+function stepDetails() {
+  show("tpl-details", 1);
+  fillCountries();
+  $("[data-lead]").textContent =
+    `${CONFIG.duration[0].toUpperCase()}${CONFIG.duration.slice(1)} in total: a few ` +
+    `questions about your background, a short timed knowledge check, and your own work.`;
+  $("[data-next]").addEventListener("click", async (e) => {
+    clearErrors();
+    const done = busy(e.currentTarget, "Saving…");
+    try {
+      const app = await apiJson("POST", "/applications/", values(DETAIL_FIELDS));
+      LS.appId = app.id;
+      stepEligibility();
+    } catch (err) {
+      showErrors(err.data);
+    } finally {
+      done();
+    }
+  });
+}
+
+/* --------------------------------------------------- step 2: eligibility */
+const ELIGIBILITY = [
+  ["elig_attend", "Can you attend in person for all four days?",
+   ["Yes, all four days", "Only part of the period", "No"]],
+  ["elig_laptop", "Will you bring a laptop on which you can install software (R, RStudio, INLA)?",
+   ["Yes", "No", "I am not sure"]],
+  ["elig_data", "Do you have access to spatial data you could analyse?",
+   ["Yes, I work with it now", "Not yet, but I expect to within six months", "No"]],
+  ["elig_funding", "Travel and accommodation are not funded by the workshop. How will yours be covered?",
+   ["My institution has agreed to cover it", "I will cover it myself",
+    "Likely covered, but not yet confirmed", "I could not attend without financial support"]],
+];
+
+function stepEligibility() {
+  show("tpl-eligibility", 2);
+  $("[data-questions]").innerHTML =
+    ELIGIBILITY.map(([n, t, o]) => questionBlock(n, t, o)).join("");
+
+  $("[data-next]").addEventListener("click", async (e) => {
+    clearErrors();
+    const payload = values(ELIGIBILITY.map(([n]) => n));
+    if (Object.values(payload).some((v) => !v)) {
+      alertBox("Please answer all four questions.");
       return;
     }
-    const msg = err.data && (err.data.detail || JSON.stringify(err.data));
-    introAlert.textContent = msg || "Could not start the quiz.";
-    introAlert.classList.remove("d-none");
-  } finally {
-    btn.disabled = false;
-  }
-});
+    const done = busy(e.currentTarget, "Saving…");
+    try {
+      const res = await apiJson("POST", `/applications/${LS.appId}/eligibility/`, payload);
+      if (!res.eligible) { stopped(res.reason); return; }
+      stepExperience();
+    } catch (err) {
+      showErrors(err.data);
+    } finally {
+      done();
+    }
+  });
+}
 
-// -------------------------------------------------------- Step 5b: question loop
+function stopped(reason, title) {
+  show("tpl-stopped");
+  renderSteps(false);
+  if (title) $("[data-title]").textContent = title;
+  $("[data-message]").textContent = reason;
+  LS.appId = null;   // nothing further to resume
+}
+
+/* ---------------------------------------------------- step 3: experience */
+const EXPERIENCE = [
+  ["Working with R", [
+    ["exp_rfreq", "How often do you currently write or run R code yourself?",
+     ["Most weeks", "Most months", "A few times a year", "Rarely or never"]],
+    ["exp_rself", "How would you describe your own R skills?",
+     ["Beginner — I can run scripts others have written",
+      "Intermediate — I write my own analysis scripts",
+      "Advanced — I write functions and packages"]],
+    ["exp_bayes", "How would you describe your familiarity with Bayesian methods?",
+     ["None", "Beginner", "Intermediate", "Advanced"]],
+    ["exp_glm", "Have you fitted a regression or GLM yourself in the past two years?",
+     ["Yes, several times", "Yes, once or twice", "No"]],
+  ]],
+  ["Your data", [
+    ["exp_dtype", "Which best describes the spatial data you work with, or expect to?",
+     ["Survey or sampling points with coordinates",
+      "Counts or rates aggregated to districts, wards or facilities",
+      "Raster or gridded environmental data",
+      "Locations of events or cases (point patterns)",
+      "A mixture of these", "None yet"]],
+    ["exp_when", "When would you next apply these methods to your own data?",
+     ["I have an analysis waiting for these methods now", "Within six months",
+      "Within a year", "No specific plan yet"]],
+  ]],
+  ["Afterwards", [
+    ["exp_share", "Would you run an internal session to pass on what you learn to colleagues?",
+     ["Yes, and I have a specific team in mind", "Yes, in principle", "Possibly", "No"]],
+    ["exp_use", "Does your current role involve producing analyses that other people use for decisions?",
+     ["Yes, regularly", "Sometimes", "No"]],
+  ]],
+];
+
+function stepExperience() {
+  show("tpl-experience", 3);
+  $("[data-questions]").innerHTML = EXPERIENCE.map(([heading, questions]) =>
+    `<h2>${heading}</h2>` + questions.map(([n, t, o]) => questionBlock(n, t, o)).join("")
+  ).join("");
+
+  const names = EXPERIENCE.flatMap(([, qs]) => qs.map(([n]) => n));
+  $("[data-next]").addEventListener("click", async (e) => {
+    clearErrors();
+    const payload = values(names);
+    if (Object.values(payload).some((v) => !v)) {
+      alertBox("Please answer every question.");
+      return;
+    }
+    const done = busy(e.currentTarget, "Saving…");
+    try {
+      await apiJson("POST", `/applications/${LS.appId}/experience/`, payload);
+      stepClaims();
+    } catch (err) {
+      showErrors(err.data);
+    } finally {
+      done();
+    }
+  });
+}
+
+/* ------------------------------------------------- step 4: honesty check */
+async function stepClaims() {
+  show("tpl-claims", 4);
+  const body = $("[data-rows]");
+  body.innerHTML = `<tr><td colspan="4" class="muted">Loading…</td></tr>`;
+
+  try {
+    // The server decides the order, and never says which names are invented.
+    const data = await apiJson("GET", `/applications/${LS.appId}/claims/`);
+    claimFunctions = data.functions;
+  } catch (err) {
+    alertBox("Could not load this step. Please reload the page.");
+    return;
+  }
+
+  body.innerHTML = claimFunctions.map((fn, i) => `
+    <tr>
+      <td>${fn}()</td>
+      ${["used", "heard", "no"].map((v) =>
+        `<td><input type="radio" name="c${i}" value="${v}"
+                    aria-label="${fn}: ${v}"></td>`).join("")}
+    </tr>`).join("");
+
+  $("[data-next]").addEventListener("click", async (e) => {
+    clearErrors();
+    const claims = {};
+    let missing = false;
+    claimFunctions.forEach((fn, i) => {
+      const picked = stage.querySelector(`input[name="c${i}"]:checked`);
+      if (!picked) missing = true;
+      else claims[fn] = picked.value;
+    });
+    if (missing) {
+      alertBox("Please answer for every function.");
+      return;
+    }
+    const done = busy(e.currentTarget, "Saving…");
+    try {
+      await apiJson("POST", `/applications/${LS.appId}/claims/`, { claims });
+      stepQuizIntro();
+    } catch (err) {
+      showErrors(err.data);
+    } finally {
+      done();
+    }
+  });
+}
+
+/* ----------------------------------------------- step 5: knowledge check */
+function stepQuizIntro() {
+  show("tpl-quiz-intro", 5);
+
+  const { questions, seconds_min, seconds_max } = CONFIG.quiz;
+  $("[data-shape]").textContent =
+    `${questions} multiple-choice questions, one at a time.`;
+  $("[data-timing]").textContent = seconds_min === seconds_max
+    ? `${seconds_min} seconds`
+    : `${seconds_min}–${seconds_max} seconds`;
+
+  $("[data-next]").addEventListener("click", async (e) => {
+    alertBox("");
+    const done = busy(e.currentTarget, "Starting…");
+    try {
+      const question = await apiJson("POST", `/applications/${LS.appId}/quiz/start/`);
+      renderQuestion(question);
+    } catch (err) {
+      if (err.status === 404) { reset("We couldn't find your application. Please start again."); return; }
+      alertBox((err.data && (err.data.detail || JSON.stringify(err.data))) ||
+               "Could not start the knowledge check.");
+      done();
+    }
+  });
+}
+
 let countdownTimer = null;
 let selectedAnswer = null;
-let currentDeadline = null;
-
-const els = {
-  progress:    document.getElementById("q-progress"),
-  progressbar: document.getElementById("q-progressbar"),
-  category:    document.getElementById("q-category"),
-  countdown:   document.getElementById("q-countdown"),
-  text:        document.getElementById("q-text"),
-  options:     document.getElementById("q-options"),
-  submit:      document.getElementById("submit-answer"),
-  status:      document.getElementById("q-status"),
-};
+let submitting = false;
 
 function stopCountdown() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
 }
 
-function startCountdown(seconds) {
+// How long the server says is left, when it says so. Falls back to deriving it
+// from the ISO deadline only if `remaining_seconds` is missing (an older payload),
+// and clamps either way: anything outside 0..limit is a clock disagreement, not a
+// real allowance, and acting on it is how an applicant ends up with every question
+// auto-submitted blank or every answer discarded as late.
+function allowanceFrom(payload) {
+  const limit = Math.max(1, Number(payload.time_limit_seconds) || 1);
+  let seconds = Number(payload.remaining_seconds);
+
+  if (!Number.isFinite(seconds) && payload.deadline) {
+    const grace = (payload.grace_seconds || 0) * 1000;
+    seconds = (new Date(payload.deadline).getTime() - grace - Date.now()) / 1000;
+    // Derived from the device clock, so only believe it inside the valid range.
+    // Out of range means the two clocks disagree; assume the applicant is owed the
+    // full question rather than punishing them for their phone being wrong.
+    if (!Number.isFinite(seconds) || seconds > limit || seconds < 0) seconds = limit;
+  }
+  if (!Number.isFinite(seconds)) seconds = limit;
+
+  return { limit, seconds: Math.max(0, Math.min(limit, seconds)) };
+}
+
+// Server-authoritative countdown. The *amount* of time comes from the server; the
+// ticking uses performance.now(), which is monotonic -- unaffected by the system
+// clock being adjusted (or by NTP correcting it) mid-question, and still accurate
+// after a background tab has had its timers throttled or the laptop has slept.
+//
+// The server's network grace is deliberately not shown: someone told "40 seconds"
+// sees 40, and the grace quietly covers the round trip of the answer we
+// auto-submit at zero.
+function startCountdown(allowance) {
   stopCountdown();
-  // Server sends `remaining_seconds`; we count against a monotonic clock
-  // (performance.now) rather than Date.now / deadline, so a device clock
-  // out of sync doesn't wreck the countdown. Server still enforces the
-  // real deadline on the answer POST.
-  const started = performance.now();
-  const total = Math.max(0, Number(seconds) || 0);
-  currentDeadline = started + total * 1000;
+  const { limit, seconds } = allowance;
+  const startedAt = performance.now();
+  const el = $("[data-countdown]");
+  const bar = $("[data-bar]");
+  const barWrap = bar.parentElement;
+
   const tick = () => {
-    const elapsed = (performance.now() - started) / 1000;
-    const remaining = Math.max(0, Math.round(total - elapsed));
-    els.countdown.textContent = `${remaining}s`;
-    els.countdown.classList.toggle("danger", remaining <= 5);
+    const elapsed = (performance.now() - startedAt) / 1000;
+    const remaining = Math.max(0, seconds - elapsed);
+    el.textContent = `${Math.ceil(remaining)}s`;
+    const fraction = Math.max(0, Math.min(1, remaining / limit));
+    bar.style.width = `${fraction * 100}%`;
+
+    const low = remaining <= limit * 0.4, crit = remaining <= 5;
+    el.classList.toggle("low", low && !crit);
+    el.classList.toggle("crit", crit);
+    barWrap.classList.toggle("low", low && !crit);
+    barWrap.classList.toggle("crit", crit);
+
     if (remaining <= 0) {
       stopCountdown();
-      // Freeze the option buttons so the applicant can see time ran out
-      // and that we're moving on automatically.
-      els.options.querySelectorAll(".quiz-option").forEach((o) => (o.disabled = true));
-      els.countdown.textContent = "0s";
-      els.status.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Time's up — loading next…`;
-      submitAnswer(true);
+      $("[data-status]").textContent = "Time's up — moving on…";
+      // Whatever is selected goes in; an empty answer is recorded as a timeout by
+      // the server, which advances the session either way.
+      submitAnswer({ timedOut: true });
     }
   };
   tick();
@@ -423,257 +500,270 @@ function startCountdown(seconds) {
 }
 
 function renderQuestion(payload) {
-  showScreen("question");
+  show("tpl-question", 5);
   selectedAnswer = null;
-  els.submit.disabled = true;
-  els.status.textContent = "";
+  sessionId = payload.session;
 
   const q = payload.question;
   const shown = payload.position + 1;
-  els.progress.textContent = `Question ${shown} of ${payload.total}`;
-  els.progressbar.style.width = `${(shown / payload.total) * 100}%`;
-  els.category.textContent = (q.category || "").toLowerCase();
-  els.text.textContent = q.text;
+  $("[data-progress]").textContent = `Question ${shown} of ${payload.total}`;
+  $("[data-category]").textContent = q.category_label || q.category || "";
+  $("[data-stem]").textContent = q.text;
 
-  els.options.innerHTML = "";
-  q.options.forEach((opt) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "btn btn-outline-secondary quiz-option";
-    b.textContent = opt;
-    b.addEventListener("click", () => {
-      selectedAnswer = opt;
-      els.options.querySelectorAll(".quiz-option").forEach((o) => o.classList.remove("active"));
-      b.classList.add("active");
-      els.submit.disabled = false;
+  const code = $("[data-code]");
+  code.textContent = q.code || "";
+  code.classList.toggle("hidden", !q.code);
+
+  // Options arrive already shuffled for this applicant; render as received and
+  // submit the option *string*, never an index.
+  const box = $("[data-options]");
+  box.innerHTML = q.options.map((opt, i) => `
+    <label class="opt">
+      <input type="radio" name="answer" value="${i}">
+      <span></span>
+    </label>`).join("");
+  box.querySelectorAll(".opt").forEach((label, i) => {
+    label.querySelector("span").textContent = q.options[i];
+    label.addEventListener("change", () => {
+      selectedAnswer = q.options[i];
+      box.querySelectorAll(".opt").forEach((o) => o.classList.remove("sel"));
+      label.classList.add("sel");
+      $("[data-submit]").disabled = false;
     });
-    els.options.appendChild(b);
   });
 
-  // Prefer server-computed remaining_seconds (clamped by the backend);
-  // fall back to time_limit_seconds if a call site didn't include it.
-  const secs = payload.remaining_seconds != null
-    ? payload.remaining_seconds
-    : (payload.time_limit_seconds != null ? payload.time_limit_seconds : 25);
-  startCountdown(secs);
+  $("[data-submit]").addEventListener("click", () => submitAnswer());
+  startCountdown(allowanceFrom(payload));
 }
 
-els.submit.addEventListener("click", () => submitAnswer(false));
-
-let submitting = false;
-async function submitAnswer(auto) {
+// Advance the session: submit, then render whatever comes back.
+//
+// `timedOut` marks the automatic submission at zero. It gets one retry and then a
+// resync, because the alternative is worse than a duplicate request: the answer
+// endpoint refuses to move a session on that is already past its deadline in any
+// other way, so a single dropped POST at the moment the clock hit zero used to
+// leave the applicant on a dead screen with a stopped timer and no button that did
+// anything -- with no way back in, since the quiz cannot be restarted.
+async function submitAnswer({ timedOut = false } = {}) {
   if (submitting) return;
   submitting = true;
   stopCountdown();
-  els.submit.disabled = true;
+  const button = $("[data-submit]");
+  if (button) button.disabled = true;
+
   const answer = selectedAnswer || "";
-  // Two attempts: covers a transient network hiccup at the moment the timer
-  // fires an auto-submit. The deadline is server-authoritative, so retrying
-  // won't game the clock — a late answer stays timed_out server-side.
-  let lastErr = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const res = await apiJson("POST", `/quiz/${LS.sessId}/answer/`, { answer });
-      if (res.finished) {
-        showResult(res.result);
-      } else {
-        renderQuestion(res.next);
-      }
+  try {
+    const res = await apiJson("POST", `/quiz/${sessionId}/answer/`, { answer });
+    if (res.finished) showResult(res.result);
+    else renderQuestion(res.next);
+  } catch (err) {
+    console.error(err);
+    if (!timedOut) {
+      const status = $("[data-status]");
+      // A manual submit still has time on the clock: let them press it again
+      // rather than spending their remaining seconds on retries.
+      if (status) status.textContent = "Could not submit — please try again.";
+      if (button) button.disabled = false;
       submitting = false;
       return;
-    } catch (err) {
-      lastErr = err;
-      console.error(`Quiz answer submit failed (attempt ${attempt + 1}):`, err);
-      if (attempt === 0) {
-        await new Promise((r) => setTimeout(r, 700));
-      }
     }
+    submitting = false;
+    await recoverAfterTimeout(answer);
+  } finally {
+    submitting = false;
   }
-  els.status.innerHTML =
-    `<span class="text-danger">Couldn't reach the server. </span>` +
-    `<a href="#" id="q-retry">Try again</a>`;
-  const retry = document.getElementById("q-retry");
-  if (retry) retry.addEventListener("click", (e) => {
-    e.preventDefault();
-    submitAnswer(auto);
-  });
-  submitting = false;
 }
 
-// ---------------------------------------------------------------- Step 5c: result
+// One retry, then ask the server where the session actually is. Either the answer
+// landed and we render the next question, or the question expired server-side and
+// /current/ hands back the one after it (or the result).
+async function recoverAfterTimeout(answer) {
+  const status = $("[data-status]");
+  const say = (text) => { if (status) status.textContent = text; };
+  say("Connection problem — retrying…");
+
+  for (const wait of [1200, 3000]) {
+    await new Promise((resolve) => setTimeout(resolve, wait));
+    try {
+      const res = await apiJson("POST", `/quiz/${sessionId}/answer/`, { answer });
+      if (res.finished) showResult(res.result);
+      else renderQuestion(res.next);
+      return;
+    } catch (err) {
+      // 400 means the server has already moved past this question (it expired on
+      // its own clock), so there is nothing left to submit -- resync instead.
+      if (err.status === 400) break;
+    }
+    try {
+      const state = await apiJson("GET", `/quiz/${sessionId}/current/`);
+      if (state.question) { renderQuestion(state); return; }
+      if (typeof state.score === "number") { showResult(state); return; }
+    } catch { /* still offline -- fall through and try once more */ }
+  }
+
+  try {
+    const state = await apiJson("GET", `/quiz/${sessionId}/current/`);
+    if (state.question) { renderQuestion(state); return; }
+    if (typeof state.score === "number") { showResult(state); return; }
+  } catch { /* nothing more to try from here */ }
+
+  say("You appear to be offline. Reload this page when your connection is back — "
+      + "your answers so far are saved.");
+}
+
+/* ------------------------------------------------------ result + step 6 */
 function showResult(result) {
   stopCountdown();
-  showScreen("result");
-  document.getElementById("r-score").textContent = result.score;
-  document.getElementById("r-total").textContent = result.total;
-
-  const icon = document.getElementById("r-icon");
-  const iconWrap = icon.parentElement;
-  const message = document.getElementById("r-message");
-  const continueWrap = document.getElementById("r-continue-wrap");
+  show("tpl-result", 5);
+  $("[data-score]").textContent = result.score;
+  $("[data-total]").textContent = result.total;
 
   const unlocked = result.passed && !result.final_submitted;
-  continueWrap.classList.toggle("d-none", !unlocked);
+  $("[data-continue-wrap]").classList.toggle("hidden", !unlocked);
 
   if (result.final_submitted) {
-    icon.className = "bi bi-send-check-fill";
-    iconWrap.className = "auth-head-icon success";
-    message.textContent = "Your application has already been submitted.";
+    $("[data-message]").textContent = "Your application has already been submitted.";
   } else if (result.passed) {
-    icon.className = "bi bi-patch-check-fill";
-    iconWrap.className = "auth-head-icon success";
-    message.textContent =
-      "You've met the required score. One last step: your motivation, expectations and CV.";
+    $("[data-message]").textContent =
+      "You've met the required score. One step left: your own work and your CV.";
   } else {
-    icon.className = "bi bi-info-circle-fill";
-    iconWrap.className = "auth-head-icon muted";
-    message.textContent =
-      `A score of at least ${result.pass_mark} is needed to continue. ` +
-      `Thank you for your interest.`;
+    $("[data-title]").textContent = "Thank you for taking the knowledge check";
+    $("[data-message]").textContent =
+      `A score of at least ${result.pass_mark} is needed to continue with this application.`;
   }
+  $("[data-completed]").textContent = result.completed_at
+    ? `Completed ${new Date(result.completed_at).toLocaleString()}` : "";
 
-  document.getElementById("r-completed").textContent = result.completed_at
-    ? `Completed ${new Date(result.completed_at).toLocaleString()}`
-    : "";
-
-  // Keep resume state while the final step is still open. Otherwise the
-  // journey is done — clear it so a fresh visit starts at prep.
-  if (unlocked) {
-    if (result.application) LS.appId = result.application;
-    if (result.id) LS.sessId = result.id;
-  } else {
-    LS.sessId = null;
-    LS.appId = null;
-  }
+  if (unlocked) $("[data-next]").addEventListener("click", stepWritten);
+  else LS.appId = null;
 }
 
-// ------------------------------------------------- Step 6: submit (motivation, expectations, written prompts + CV)
-// Result screen "Continue to final step" routes straight to the single
-// finalize screen. The reference portal collects everything in one form
-// with one Submit button; this SPA follows the same pattern.
-document.getElementById("go-final").addEventListener("click", () => {
-  clearFieldErrors();
-  showScreen("final");
-});
+const WRITTEN_FIELDS = ["written_dataset", "written_code", "written_why_not_ols",
+                        "written_other", "motivation", "expectations"];
 
-const finalForm = document.getElementById("final-form");
+// Same rule as the server (validators.count_words): whitespace-delimited.
+const countWords = (text) => (text.match(/\S+/g) || []).length;
 
-// Live word count under motivation + expectations. Browser handles the
-// required check via HTML5 (novalidate removed on final-form); JS enforces
-// the 300-word cap on submit.
-function countWords(text) {
-  const trimmed = (text || "").trim();
-  return trimmed ? trimmed.split(/\s+/).length : 0;
-}
-function wireupWordCounters() {
-  const maxFromConfig = configMaxWords();
-  finalForm.querySelectorAll("textarea[data-max-words]").forEach((ta) => {
-    const max = maxFromConfig || parseInt(ta.dataset.maxWords, 10) || 300;
-    const counter = finalForm.querySelector(`.word-counter[data-counter-for="${ta.name}"]`);
-    if (!counter) return;
+function wireWordCounters() {
+  $$("[data-words]").forEach((field) => {
+    const limit = Number(field.dataset.words);
+    const readout = stage.querySelector(`[data-counter-for="${field.name}"]`);
+    if (!readout) return;
     const update = () => {
-      const n = countWords(ta.value);
-      counter.textContent = `${n} / ${max} words`;
-      counter.classList.toggle("over-limit", n > max);
+      const words = countWords(field.value);
+      readout.textContent = `${words} / ${limit} words`;
+      // Colour only once they are over -- a counter that shouts at 250 is noise.
+      readout.style.color = words > limit ? "var(--bad)" : "";
+      readout.style.fontWeight = words > limit ? "600" : "";
     };
-    ta.addEventListener("input", update);
+    field.addEventListener("input", update);
     update();
   });
 }
 
-finalForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  clearFieldErrors();
-  // Enforce word cap client-side before the network round trip.
-  const max = configMaxWords();
-  let overLimit = false;
-  finalForm.querySelectorAll("textarea[data-max-words]").forEach((ta) => {
-    if (countWords(ta.value) > max) {
-      const target = finalForm.querySelector(`[data-error="${ta.name}"]`);
-      if (target) target.textContent = `Please limit to ${max} words.`;
-      overLimit = true;
-    }
-  });
-  if (overLimit) return;
-  const btn = document.getElementById("submit-final");
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Submitting…`;
-  try {
-    await apiForm("POST", `/applications/${LS.appId}/finalize/`, new FormData(finalForm));
-    // Keep LS.appId so a reload after this hits /status/ and lands on Done
-    // again — clearing it here would strand a returning applicant on the prep
-    // splash and let them start a duplicate application.
-    showScreen("done");
-  } catch (err) {
-    renderFieldErrors(err, finalAlert);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `Submit application <i class="bi bi-check2-circle ms-1"></i>`;
-  }
-});
+function localChecksPass(file) {
+  const maxMb = CONFIG.limits.cv_max_mb;
+  const maxBytes = maxMb * 1024 * 1024;
+  let ok = true;
+  const fail = (field, message) => {
+    const box = stage.querySelector(`[data-error="${field}"]`);
+    if (box) box.textContent = message;
+    ok = false;
+  };
 
-// ---------------------------------------------------------------- Boot / resume
-function resetJourney() {
-  LS.appId = null;
-  LS.sessId = null;
+  $$("[data-words]").forEach((field) => {
+    const limit = Number(field.dataset.words);
+    const words = countWords(field.value);
+    if (words > limit) fail(field.name, `${words} words — please shorten to ${limit} or fewer.`);
+  });
+
+  if (!file) fail("cv", "Please attach your CV.");
+  else if (!file.name.toLowerCase().endsWith(".pdf"))
+    fail("cv", "Your CV must be a PDF. Export from Word rather than renaming the file.");
+  else if (file.size > maxBytes)
+    fail("cv", `That file is ${(file.size / 1048576).toFixed(1)} MB. The limit is ${maxMb} MB.`);
+
+  if (!ok) alertBox("Please correct the highlighted answers.");
+  return ok;
 }
 
-async function boot() {
-  if (!LS.appId) { resetJourney(); showScreen("prep"); return; }
+function stepWritten() {
+  show("tpl-written", 6);
+  wireWordCounters();
+  $("[data-next]").addEventListener("click", async (e) => {
+    clearErrors();
+    const form = new FormData();
+    WRITTEN_FIELDS.forEach((n) => form.append(n, stage.querySelector(`[name="${n}"]`).value.trim()));
+    const file = stage.querySelector('[name="cv"]').files[0];
+    if (file) form.append("cv", file);
 
-  // Always re-validate with /status/ before trusting the stored id — the
-  // record may have been deleted, or the backend may have new flags.
+    // Fail fast on the two things we can see without a round trip. The server
+    // re-checks all of it (and the page count, which we can't check here).
+    if (!localChecksPass(file)) return;
+
+    const done = busy(e.currentTarget, "Submitting…");
+    try {
+      await apiForm("POST", `/applications/${LS.appId}/finalize/`, form);
+      show("tpl-done", 7);
+      LS.appId = null;
+    } catch (err) {
+      showErrors(err.data);
+      done();
+    }
+  });
+}
+
+/* ------------------------------------------------------------ resume/boot */
+function reset(message) {
+  LS.appId = null;
+  stepBefore();
+  if (message) alertBox(message);
+}
+
+async function loadConfig() {
+  try {
+    // Merge rather than replace, so a field added to the API later cannot leave an
+    // older cached copy of this file reading `undefined.cv_max_mb`.
+    const data = await apiJson("GET", "/config/");
+    CONFIG = { ...CONFIG, ...data, limits: { ...CONFIG.limits, ...(data.limits || {}) },
+               quiz: { ...CONFIG.quiz, ...(data.quiz || {}) } };
+  } catch {
+    // Fall back to the built-in defaults: the applicant sees slightly staler copy
+    // rather than a blank page, and every limit is enforced server-side anyway.
+  }
+}
+
+(async function boot() {
+  await loadConfig();
+
+  if (!LS.appId) { stepBefore(); return; }
+
   let state;
   try {
     state = await apiJson("GET", `/applications/${LS.appId}/status/`);
-  } catch (err) {
-    resetJourney();
-    showScreen("prep");
+  } catch {
+    reset();          // stale or deleted -> start a fresh application
     return;
   }
 
-  // Already submitted — keep the id so subsequent reloads still land on Done
-  // rather than a fresh prep splash inviting a duplicate application.
-  if (state.final_submitted) { showScreen("done"); return; }
+  if (state.ineligible_reason) { stopped(state.ineligible_reason); return; }
+  if (state.final_submitted) { LS.appId = null; show("tpl-done", 7); return; }
 
-  // Ineligible — keep the appId so the user can revise their answers via the
-  // "Change my answers" button on the ineligible screen.
-  if (state.ineligible_reason) {
-    showIneligible(state.ineligible_reason);
-    return;
-  }
-
-  // Quiz already started?
   if (state.quiz) {
-    LS.sessId = state.quiz.id;
+    sessionId = state.quiz.id;
     if (state.quiz.completed_at) { showResult(state.quiz); return; }
     try {
-      const data = await apiJson("GET", `/quiz/${LS.sessId}/current/`);
+      const data = await apiJson("GET", `/quiz/${state.quiz.id}/current/`);
       if (data.question) { renderQuestion(data); return; }
       if (typeof data.score === "number") { showResult(data); return; }
-    } catch (err) {
-      LS.sessId = null;
-    }
+    } catch { /* fall through to the intro */ }
+    stepQuizIntro();
+    return;
   }
 
-  // Pre-quiz — resume at the earliest incomplete step.
-  const done = state.completed || {};
-  if (!done.eligibility) { showScreen("eligibility"); return; }
-  if (!done.experience)  { showScreen("experience"); return; }
-  if (!done.claims)      { showScreen("claims"); loadClaims(); return; }
-
-  showScreen("intro");
-}
-
-// ---------------------------------------------------------------- Bootstrap
-// Load /config/ first so country dropdowns, deadline text, and word-limit
-// counters have real values, then hand off to boot() which runs the
-// existing resume logic.
-(async function bootstrap() {
-  await loadConfig();
-  populateCountrySelects();
-  fillDeadlinePlaceholders();
-  wireupPrepChecklist();
-  wireupWordCounters();
-  await boot();
+  // No quiz yet: pick up at the first unanswered step.
+  if (!state.completed.eligibility) stepEligibility();
+  else if (!state.completed.experience) stepExperience();
+  else if (!state.completed.claims) stepClaims();
+  else stepQuizIntro();
 })();

@@ -4,646 +4,327 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Apply — Application Portal</title>
-
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Bootstrap 5 + Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-
-  <!-- Theme -->
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Nunito+Sans:wght@400;600;700&display=swap"
+        rel="stylesheet">
   <link href="css/styles.css" rel="stylesheet">
 </head>
 <body>
+<header class="site-header">
+  <img src="img/ihi-logo.jpg" alt="Ifakara Health Institute" class="brand-logo">
+  <img src="img/map-logo.png" alt="MAP Project" class="brand-logo">
+  <span class="brand">Application Portal</span>
+  <span class="sub">Onboarding &middot; knowledge check &amp; application</span>
+  <span class="spacer"></span>
+  <a class="muted" href="index.html">Home</a>
+  <a class="muted" href="panel.html">Staff panel</a>
+</header>
 
-<nav class="navbar navbar-expand-lg">
-  <div class="container">
-    <a class="navbar-brand d-flex align-items-center gap-3" href="index.html">
-      <img src="img/ihi-logo.jpg" alt="Ifakara Health Institute" class="brand-logo brand-logo-ihi">
-      <img src="img/map-logo.png" alt="MAP Project" class="brand-logo brand-logo-map">
-      <span class="brand-divider d-none d-md-inline-block"></span>
-      <span class="brand-text d-none d-md-inline">Application Portal</span>
-    </a>
-    <div class="d-flex gap-2">
-      <a class="btn btn-sm btn-outline-secondary" href="index.html"><i class="bi bi-arrow-left"></i> Home</a>
-      <a class="btn btn-sm btn-outline-secondary" href="panel.html"><i class="bi bi-shield-lock"></i> Staff panel</a>
-    </div>
+<div class="wrap">
+  <ul class="steps" id="steps"></ul>
+
+  <div class="card">
+    <div id="stage"></div>
   </div>
-</nav>
-
-<div class="app-shell">
-
-  <!-- Progress steps -->
-  <ul class="stepper" id="steps">
-    <li class="step active" data-step="form">
-      <span class="step-circle">1</span>
-      <span class="step-label">Details</span>
-    </li>
-    <li class="step" data-step="eligibility">
-      <span class="step-circle">2</span>
-      <span class="step-label">Eligibility</span>
-    </li>
-    <li class="step" data-step="experience">
-      <span class="step-circle">3</span>
-      <span class="step-label">Experience</span>
-    </li>
-    <li class="step" data-step="claims">
-      <span class="step-circle">4</span>
-      <span class="step-label">Honesty</span>
-    </li>
-    <li class="step" data-step="quiz">
-      <span class="step-circle">5</span>
-      <span class="step-label">Quiz</span>
-    </li>
-    <li class="step" data-step="submit">
-      <span class="step-circle">6</span>
-      <span class="step-label">Submit</span>
-    </li>
-  </ul>
-
-  <!-- ============ STEP 0: BEFORE YOU BEGIN (prep checklist) ============ -->
-  <section id="screen-prep" class="screen d-none">
-    <div class="text-center">
-      <span class="auth-head-icon"><i class="bi bi-clipboard2-check-fill"></i></span>
-    </div>
-    <div class="text-center mb-4">
-      <h4 class="mt-1">Before you begin</h4>
-      <p class="text-muted mb-1">
-        The application has six steps and takes <span data-duration>about 15 minutes</span>. Tick
-        each item once you have it ready — Begin unlocks when everything is checked.
-      </p>
-      <p class="mb-0"><span class="badge-pill-brand"><i class="bi bi-calendar-event me-1"></i>Apply by <span data-deadline>30 August 2026</span></span></p>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-body">
-        <ul class="list-unstyled mb-0 prep-checklist" id="prep-checklist">
-          <li class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="prep-cv">
-            <label class="form-check-label" for="prep-cv">
-              My CV is a <strong>PDF</strong>, no more than <strong><span data-cv-max-pages>2</span> pages</strong>
-              and under <strong><span data-cv-max-mb>5</span> MB</strong>.
-            </label>
-          </li>
-          <li class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="prep-motivation">
-            <label class="form-check-label" for="prep-motivation">
-              I have my <strong>motivation</strong> written (why I'm applying) — no more than
-              <strong><span data-max-words>300</span> words</strong>.
-            </label>
-          </li>
-          <li class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="prep-expectations">
-            <label class="form-check-label" for="prep-expectations">
-              I have my <strong>expectations</strong> written (what I hope to gain) — no more than
-              <strong><span data-max-words>300</span> words</strong>.
-            </label>
-          </li>
-          <li class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="prep-dataset">
-            <label class="form-check-label" for="prep-dataset">
-              I can name a <strong>spatial dataset I've analysed</strong> and describe what I did with it.
-            </label>
-          </li>
-          <li class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="prep-code">
-            <label class="form-check-label" for="prep-code">
-              I have <strong>5–15 lines of my own R code</strong> to paste (or I'll answer "none").
-            </label>
-          </li>
-          <li class="form-check mb-0">
-            <input class="form-check-input" type="checkbox" id="prep-ols">
-            <label class="form-check-label" for="prep-ols">
-              I can explain, in one sentence, <strong>why OLS is a poor choice for spatial data</strong>.
-            </label>
-          </li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="alert alert-warning small" role="alert">
-      <i class="bi bi-info-circle-fill me-1"></i>
-      There is <strong>no travel, accommodation or subsistence support</strong>. You will need to
-      cover those costs (or arrange for them to be covered) if you're selected.
-    </div>
-
-    <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
-      <button type="button" class="btn btn-outline-secondary" id="print-checklist">
-        <i class="bi bi-printer me-1"></i> Print this list
-      </button>
-      <button class="btn btn-primary btn-lg px-4" id="begin-application" disabled>
-        Begin application <i class="bi bi-arrow-right ms-1"></i>
-      </button>
-    </div>
-  </section>
-
-  <!-- ============ STEP 1: DETAILS FORM (no CV / motivation / expectations) ============ -->
-  <section id="screen-form" class="screen d-none">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="mb-1">Your details</h4>
-        <p class="text-muted small mb-4">
-          All fields are required. A few short steps follow before the knowledge
-          check — you'll upload your CV and written work at the end.
-        </p>
-
-        <div class="alert alert-danger d-none" id="form-alert"></div>
-
-        <form id="application-form">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">First name</label>
-              <input class="form-control form-control-air" name="first_name" required>
-              <div class="field-error" data-error="first_name"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Last name</label>
-              <input class="form-control form-control-air" name="last_name" required>
-              <div class="field-error" data-error="last_name"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Email</label>
-              <input type="email" class="form-control form-control-air" name="email"
-                     autocomplete="email" inputmode="email" required
-                     title="Please enter a valid email address (e.g. name@example.com).">
-              <div class="field-error" data-error="email"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Phone</label>
-              <input type="tel" class="form-control form-control-air" name="phone"
-                     autocomplete="tel" inputmode="tel" required
-                     pattern="^\+(?:[\s\-()]*\d){8,15}[\s\-()]*$"
-                     placeholder="+255 712 345 678"
-                     title="Must start with + and a country code, then 8–15 digits. Spaces, dashes and parentheses are allowed. Local 07… numbers are rejected — the panel needs to be able to dial you from abroad.">
-              <div class="field-error" data-error="phone"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Nationality</label>
-              <select class="form-select form-control-air country-select" name="nationality" required>
-                <option value="" selected disabled>Choose…</option>
-              </select>
-              <div class="field-error" data-error="nationality"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Country of residence</label>
-              <select class="form-select form-control-air country-select" name="country_of_residence" required>
-                <option value="" selected disabled>Choose…</option>
-              </select>
-              <div class="field-error" data-error="country_of_residence"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Gender</label>
-              <select class="form-select form-control-air" name="gender" required>
-                <option value="" selected disabled>Choose…</option>
-                <option>Male</option>
-                <option>Female</option>
-              </select>
-              <div class="field-error" data-error="gender"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Institution</label>
-              <input class="form-control form-control-air" name="institution" required>
-              <div class="field-error" data-error="institution"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Institution type</label>
-              <select class="form-select form-control-air" name="institution_type" required>
-                <option value="" selected disabled>Choose…</option>
-                <option>University</option>
-                <option>NGO</option>
-                <option>Government</option>
-                <option>Private sector</option>
-                <option>Other</option>
-              </select>
-              <div class="field-error" data-error="institution_type"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Role</label>
-              <input class="form-control form-control-air" name="role" required>
-              <div class="field-error" data-error="role"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Education</label>
-              <select class="form-select form-control-air" name="education" required>
-                <option value="" selected disabled>Choose…</option>
-                <option>BSc</option>
-                <option>MSc</option>
-                <option>PhD</option>
-                <option>Other</option>
-              </select>
-              <div class="field-error" data-error="education"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">R experience</label>
-              <select class="form-select form-control-air" name="r_experience" required>
-                <option value="" selected disabled>Choose…</option>
-                <option>None</option>
-                <option>Beginner</option>
-                <option>Intermediate</option>
-                <option>Advanced</option>
-              </select>
-              <div class="field-error" data-error="r_experience"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Bayesian knowledge</label>
-              <select class="form-select form-control-air" name="bayesian_knowledge" required>
-                <option value="" selected disabled>Choose…</option>
-                <option>None</option>
-                <option>Beginner</option>
-                <option>Intermediate</option>
-                <option>Advanced</option>
-              </select>
-              <div class="field-error" data-error="bayesian_knowledge"></div>
-            </div>
-          </div>
-
-          <div class="d-grid mt-4">
-            <button class="btn btn-primary btn-lg" type="submit" id="submit-application">
-              Next <i class="bi bi-arrow-right ms-1"></i>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ STEP 2: ELIGIBILITY ============ -->
-  <section id="screen-eligibility" class="screen d-none">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="mb-1">Practical eligibility</h4>
-        <p class="text-muted small mb-4">
-          Four quick questions so we don't waste your time on an application we
-          couldn't honour. Answered honestly.
-        </p>
-
-        <div class="alert alert-danger d-none" id="elig-alert"></div>
-
-        <form id="eligibility-form" novalidate>
-          <div class="mb-4">
-            <p class="form-label fw-semibold mb-2">Can you attend all four days of the course?</p>
-            <div class="quiz-option-group" data-group="elig_attend">
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, all four days">Yes, all four days</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Only part of the period">Only part of the period</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No">No</button>
-            </div>
-            <div class="field-error" data-error="elig_attend"></div>
-          </div>
-
-          <div class="mb-4">
-            <p class="form-label fw-semibold mb-2">Will you have a laptop for the course?</p>
-            <div class="quiz-option-group" data-group="elig_laptop">
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes">Yes</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No">No</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="I am not sure">I am not sure</button>
-            </div>
-            <div class="field-error" data-error="elig_laptop"></div>
-          </div>
-
-          <div class="mb-4">
-            <p class="form-label fw-semibold mb-2">Do you work with spatial data?</p>
-            <div class="quiz-option-group" data-group="elig_data">
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, I work with it now">Yes, I work with it now</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Not yet, but I expect to within six months">Not yet, but I expect to within six months</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No">No</button>
-            </div>
-            <div class="field-error" data-error="elig_data"></div>
-          </div>
-
-          <div class="mb-4">
-            <p class="form-label fw-semibold mb-2">How will your travel and accommodation be funded?</p>
-            <div class="quiz-option-group" data-group="elig_funding">
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="My institution has agreed to cover it">My institution has agreed to cover it</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="I will cover it myself">I will cover it myself</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Likely covered, but not yet confirmed">Likely covered, but not yet confirmed</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="I could not attend without financial support">I could not attend without financial support</button>
-            </div>
-            <div class="field-error" data-error="elig_funding"></div>
-          </div>
-
-          <div class="d-grid mt-4">
-            <button class="btn btn-primary btn-lg" type="submit" id="submit-eligibility">
-              Continue <i class="bi bi-arrow-right ms-1"></i>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ INELIGIBLE (terminal, revisable) ============ -->
-  <section id="screen-ineligible" class="screen d-none">
-    <div class="text-center">
-      <span class="auth-head-icon muted"><i class="bi bi-info-circle-fill"></i></span>
-    </div>
-    <div class="card">
-      <div class="card-body text-center">
-        <h3 class="mt-1">Thank you for your interest</h3>
-        <p class="text-muted mb-4" id="ineligible-reason"></p>
-        <button type="button" class="btn btn-outline-secondary" id="change-eligibility">
-          Change my answers
-        </button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ STEP 3: EXPERIENCE ============ -->
-  <section id="screen-experience" class="screen d-none">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="mb-1">Your experience</h4>
-        <p class="text-muted small mb-4">
-          Eight quick questions about R, Bayesian methods, and how you plan to
-          use what you learn. All required.
-        </p>
-
-        <div class="alert alert-danger d-none" id="exp-alert"></div>
-
-        <form id="experience-form" novalidate>
-          <div class="mb-4">
-            <p class="form-label fw-semibold mb-2">How often do you use R?</p>
-            <div class="quiz-option-group" data-group="exp_rfreq">
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Most weeks">Most weeks</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Most months">Most months</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="A few times a year">A few times a year</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Rarely or never">Rarely or never</button>
-            </div>
-            <div class="field-error" data-error="exp_rfreq"></div>
-          </div>
-
-          <div class="mb-4">
-            <p class="form-label fw-semibold mb-2">How would you rate your R skills?</p>
-            <div class="quiz-option-group" data-group="exp_rself">
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Beginner — I can run scripts others have written">Beginner — I can run scripts others have written</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Intermediate — I write my own analysis scripts">Intermediate — I write my own analysis scripts</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Advanced — I write functions and packages">Advanced — I write functions and packages</button>
-            </div>
-            <div class="field-error" data-error="exp_rself"></div>
-          </div>
-
-          <div class="mb-4">
-            <p class="form-label fw-semibold mb-2">Your experience with Bayesian methods?</p>
-            <div class="quiz-option-group" data-group="exp_bayes">
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="None">None</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Beginner">Beginner</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Intermediate">Intermediate</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Advanced">Advanced</button>
-            </div>
-            <div class="field-error" data-error="exp_bayes"></div>
-          </div>
-
-          <div class="mb-4">
-            <p class="form-label fw-semibold mb-2">Have you fitted a generalised linear model (GLM) in R?</p>
-            <div class="quiz-option-group" data-group="exp_glm">
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, several times">Yes, several times</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, once or twice">Yes, once or twice</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No">No</button>
-            </div>
-            <div class="field-error" data-error="exp_glm"></div>
-          </div>
-
-          <div class="mb-4">
-            <p class="form-label fw-semibold mb-2">What kind of spatial data do you typically work with?</p>
-            <div class="quiz-option-group" data-group="exp_dtype">
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Survey or sampling points with coordinates">Survey or sampling points with coordinates</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Counts or rates aggregated to districts, wards or facilities">Counts or rates aggregated to districts, wards or facilities</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Raster or gridded environmental data">Raster or gridded environmental data</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Locations of events or cases (point patterns)">Locations of events or cases (point patterns)</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="A mixture of these">A mixture of these</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="None yet">None yet</button>
-            </div>
-            <div class="field-error" data-error="exp_dtype"></div>
-          </div>
-
-          <div class="mb-4">
-            <p class="form-label fw-semibold mb-2">When do you next plan to use these methods?</p>
-            <div class="quiz-option-group" data-group="exp_when">
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="I have an analysis waiting for these methods now">I have an analysis waiting for these methods now</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Within six months">Within six months</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Within a year">Within a year</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No specific plan yet">No specific plan yet</button>
-            </div>
-            <div class="field-error" data-error="exp_when"></div>
-          </div>
-
-          <div class="mb-4">
-            <p class="form-label fw-semibold mb-2">Will you share what you learn with a wider team?</p>
-            <div class="quiz-option-group" data-group="exp_share">
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, and I have a specific team in mind">Yes, and I have a specific team in mind</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, in principle">Yes, in principle</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Possibly">Possibly</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No">No</button>
-            </div>
-            <div class="field-error" data-error="exp_share"></div>
-          </div>
-
-          <div class="mb-4">
-            <p class="form-label fw-semibold mb-2">Do you use spatial / statistical methods in your current work?</p>
-            <div class="quiz-option-group" data-group="exp_use">
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, regularly">Yes, regularly</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Sometimes">Sometimes</button>
-              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No">No</button>
-            </div>
-            <div class="field-error" data-error="exp_use"></div>
-          </div>
-
-          <div class="d-grid mt-4">
-            <button class="btn btn-primary btn-lg" type="submit" id="submit-experience">
-              Continue <i class="bi bi-arrow-right ms-1"></i>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ STEP 4: HONESTY CHECK (claims) ============ -->
-  <section id="screen-claims" class="screen d-none">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="mb-1">Honesty check</h4>
-        <p class="text-muted small mb-4">
-          For each R function below, tell us honestly whether you've used it,
-          only heard of it, or aren't familiar with it. "Not familiar" is a
-          perfectly good answer.
-        </p>
-
-        <div class="alert alert-danger d-none" id="claims-alert"></div>
-
-        <div id="claims-list"></div>
-
-        <div class="d-grid mt-4">
-          <button class="btn btn-primary btn-lg" type="button" id="submit-claims">
-            Continue to the quiz <i class="bi bi-arrow-right ms-1"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ STEP 5: QUIZ INTRO ============ -->
-  <section id="screen-intro" class="screen d-none">
-    <div class="text-center">
-      <span class="auth-head-icon"><i class="bi bi-clock-history"></i></span>
-    </div>
-    <div class="card">
-      <div class="card-body text-center">
-        <h4 class="mt-1">You're ready for the knowledge check</h4>
-        <p class="text-muted mb-4">A short, timed quiz to unlock the final submission.</p>
-        <ul class="list-unstyled text-muted mb-4 mx-auto" style="max-width:400px">
-          <li class="mb-2"><i class="bi bi-check2 text-primary me-2"></i>One question at a time.</li>
-          <li class="mb-2"><i class="bi bi-check2 text-primary me-2"></i>Countdown runs per question — answer before it ends.</li>
-          <li class="mb-2"><i class="bi bi-check2 text-primary me-2"></i>You cannot go back, and the quiz can't be restarted.</li>
-        </ul>
-        <button class="btn btn-primary btn-lg px-5" id="start-quiz">Start the quiz</button>
-        <div class="alert alert-danger d-none mt-3" id="intro-alert"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ STEP 3: QUESTION ============ -->
-  <section id="screen-question" class="screen d-none">
-    <div class="card">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <span class="text-muted small" id="q-progress">Question 1 of 12</span>
-          <span class="badge category-pill" id="q-category"></span>
-          <span class="countdown" id="q-countdown">--</span>
-        </div>
-        <div class="progress mb-4" style="height:6px">
-          <div class="progress-bar" id="q-progressbar" style="width:0%"></div>
-        </div>
-
-        <h5 class="mb-4" id="q-text"></h5>
-
-        <div class="d-grid gap-2" id="q-options"></div>
-
-        <div class="d-grid mt-4">
-          <button class="btn btn-primary btn-lg" id="submit-answer" disabled>Submit answer</button>
-        </div>
-        <p class="text-muted small text-center mt-3 mb-0" id="q-status"></p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ STEP 4: RESULT ============ -->
-  <section id="screen-result" class="screen d-none">
-    <div class="text-center">
-      <span class="auth-head-icon success"><i class="bi bi-patch-check-fill" id="r-icon"></i></span>
-    </div>
-    <div class="card">
-      <div class="card-body text-center">
-        <h3 class="mt-1" id="r-heading">Quiz complete</h3>
-        <div class="display-4 fw-bold my-3"><span id="r-score">0</span> / <span id="r-total">0</span></div>
-        <p class="text-muted mb-2" id="r-message"></p>
-        <p class="text-muted small mb-0" id="r-completed"></p>
-        <div class="d-grid mt-4 d-none" id="r-continue-wrap">
-          <button class="btn btn-primary btn-lg" id="go-final">
-            Continue to final step <i class="bi bi-arrow-right ms-1"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ STEP 6: SUBMIT (motivation, expectations, written prompts + CV) ============ -->
-  <section id="screen-final" class="screen d-none">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="mb-1">Your own work</h4>
-        <p class="text-muted small mb-4">
-          Answer these briefly, upload your CV, then submit. The panel
-          judges quality — short and honest is fine.
-        </p>
-
-        <div class="alert alert-danger d-none" id="final-alert"></div>
-
-        <form id="final-form">
-          <div class="row g-3">
-            <div class="col-12">
-              <label class="form-label">Motivation <span class="text-muted">(300 words max)</span></label>
-              <textarea class="form-control form-control-air" name="motivation" rows="5" required
-                        data-max-words="300"
-                        placeholder="Why do you want to join the program?"></textarea>
-              <div class="d-flex justify-content-between align-items-start mt-1">
-                <div class="field-error flex-grow-1" data-error="motivation"></div>
-                <small class="text-muted word-counter" data-counter-for="motivation">0 / 300 words</small>
-              </div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Expectations <span class="text-muted">(300 words max)</span></label>
-              <textarea class="form-control form-control-air" name="expectations" rows="5" required
-                        data-max-words="300"
-                        placeholder="What do you hope to gain from this program?"></textarea>
-              <div class="d-flex justify-content-between align-items-start mt-1">
-                <div class="field-error flex-grow-1" data-error="expectations"></div>
-                <small class="text-muted word-counter" data-counter-for="expectations">0 / 300 words</small>
-              </div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">A dataset you have analysed <span class="text-muted">(a sentence or two)</span></label>
-              <textarea class="form-control form-control-air" name="written_dataset" rows="3" required
-                        placeholder="What was it, and what did you do with it?"></textarea>
-              <div class="field-error" data-error="written_dataset"></div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Some of your own R code <span class="text-muted">(5–15 lines, or "none")</span></label>
-              <textarea class="form-control form-control-air font-monospace" name="written_code" rows="8" required
-                        placeholder="Paste a snippet you actually wrote."></textarea>
-              <div class="field-error" data-error="written_code"></div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Why would OLS be a poor choice for spatial data? <span class="text-muted">(a sentence is fine)</span></label>
-              <textarea class="form-control form-control-air" name="written_why_not_ols" rows="3" required
-                        placeholder="One thought, briefly."></textarea>
-              <div class="field-error" data-error="written_why_not_ols"></div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Anything else for the panel? <span class="text-muted">(optional)</span></label>
-              <textarea class="form-control form-control-air" name="written_other" rows="3"
-                        placeholder="Context you'd like reviewers to see."></textarea>
-              <div class="field-error" data-error="written_other"></div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">CV upload <span class="text-muted">(PDF only, 2 pages max)</span></label>
-              <input type="file" class="form-control" name="cv" accept="application/pdf,.pdf" required>
-              <div class="field-error" data-error="cv"></div>
-            </div>
-          </div>
-
-          <div class="d-grid mt-4">
-            <button class="btn btn-primary btn-lg" type="submit" id="submit-final">
-              Submit application <i class="bi bi-check2-circle ms-1"></i>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ DONE ============ -->
-  <section id="screen-done" class="screen d-none">
-    <div class="text-center">
-      <span class="auth-head-icon success"><i class="bi bi-send-check-fill"></i></span>
-    </div>
-    <div class="card">
-      <div class="card-body text-center">
-        <h3 class="mt-1">Application submitted</h3>
-        <p class="text-muted mb-0">
-          Thank you — your application and CV have been received. We'll be in touch by email.
-        </p>
-      </div>
-    </div>
-  </section>
-
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<template id="tpl-before">
+  <h1>Before you begin</h1>
+  <p class="lead" data-lead></p>
+  <div class="warnbox" data-cost></div>
+
+  <h2>Have these ready</h2>
+  <ol class="prep" data-requirements></ol>
+
+  <p class="muted" data-deadline></p>
+  <div class="err hidden" data-alert></div>
+  <div class="actions">
+    <button class="btn" data-next>Start my application</button>
+    <button class="btn btn-ghost" data-print type="button">Print this list</button>
+  </div>
+</template>
+
+<template id="tpl-details">
+  <h1>Apply to the workshop</h1>
+  <p class="lead" data-lead></p>
+  <div class="warnbox">
+    <strong>Please answer accurately</strong> rather than optimistically.
+    A place offered to someone who cannot take it up is a place lost to another applicant.
+  </div>
+
+  <h2>Your details</h2>
+  <div class="grid2">
+    <div>
+      <label>First name <span class="req">*</span></label>
+      <input type="text" name="first_name" autocomplete="given-name">
+      <div class="field-error" data-error="first_name"></div>
+    </div>
+    <div>
+      <label>Last name <span class="req">*</span></label>
+      <input type="text" name="last_name" autocomplete="family-name">
+      <div class="field-error" data-error="last_name"></div>
+    </div>
+    <div>
+      <label>Email <span class="req">*</span></label>
+      <input type="email" name="email" autocomplete="email">
+      <p class="hint">An institutional address is preferred where you have one.</p>
+      <div class="field-error" data-error="email"></div>
+    </div>
+    <div>
+      <label>WhatsApp number — including country code <span class="req">*</span></label>
+      <input type="tel" name="phone" autocomplete="tel" placeholder="+255 712 345 678">
+      <p class="hint">
+        Start with <strong>+</strong> and your country code. A number beginning
+        <strong>0</strong> cannot be dialled from outside your country.
+      </p>
+      <div class="field-error" data-error="phone"></div>
+    </div>
+    <div>
+      <label>Country of residence <span class="req">*</span></label>
+      <select name="country_of_residence" data-countries>
+        <option value="">Choose…</option>
+      </select>
+      <div class="field-error" data-error="country_of_residence"></div>
+    </div>
+    <div>
+      <label>Nationality <span class="req">*</span></label>
+      <select name="nationality" data-countries>
+        <option value="">Choose…</option>
+      </select>
+      <div class="field-error" data-error="nationality"></div>
+    </div>
+    <div>
+      <label>Gender <span class="req">*</span></label>
+      <select name="gender">
+        <option value="">Choose…</option>
+        <option>Female</option><option>Male</option>
+        <option>Non-binary</option><option>Prefer not to say</option>
+      </select>
+      <div class="field-error" data-error="gender"></div>
+    </div>
+    <div>
+      <label>Highest qualification <span class="req">*</span></label>
+      <select name="education">
+        <option value="">Choose…</option>
+        <option>BSc</option><option>MSc</option><option>PhD</option><option>Other</option>
+      </select>
+      <div class="field-error" data-error="education"></div>
+    </div>
+    <div>
+      <label>Institution <span class="req">*</span></label>
+      <input type="text" name="institution">
+      <div class="field-error" data-error="institution"></div>
+    </div>
+    <div>
+      <label>Institution type <span class="req">*</span></label>
+      <select name="institution_type">
+        <option value="">Choose…</option>
+        <option>University</option><option>NGO</option><option>Government</option>
+        <option>Private sector</option><option>Other</option>
+      </select>
+      <div class="field-error" data-error="institution_type"></div>
+    </div>
+    <div>
+      <label>Your role <span class="req">*</span></label>
+      <input type="text" name="role">
+      <div class="field-error" data-error="role"></div>
+    </div>
+    <div>
+      <label>R experience <span class="req">*</span></label>
+      <select name="r_experience">
+        <option value="">Choose…</option>
+        <option>None</option><option>Beginner</option>
+        <option>Intermediate</option><option>Advanced</option>
+      </select>
+      <div class="field-error" data-error="r_experience"></div>
+    </div>
+    <div>
+      <label>Bayesian knowledge <span class="req">*</span></label>
+      <select name="bayesian_knowledge">
+        <option value="">Choose…</option>
+        <option>None</option><option>Beginner</option>
+        <option>Intermediate</option><option>Advanced</option>
+      </select>
+      <div class="field-error" data-error="bayesian_knowledge"></div>
+    </div>
+  </div>
+  <div class="err hidden" data-alert></div>
+  <div class="actions"><button class="btn" data-next>Continue</button></div>
+</template>
+
+<template id="tpl-eligibility">
+  <h1>Eligibility</h1>
+  <p class="lead">
+    Four practical questions. Please answer accurately — a place you cannot take up
+    is a place another applicant could have used.
+  </p>
+  <div data-questions></div>
+  <div class="note">
+    We release seats only once, shortly before the workshop, so an unfilled place is
+    usually a wasted one.
+  </div>
+  <div class="err hidden" data-alert></div>
+  <div class="actions"><button class="btn" data-next>Continue</button></div>
+</template>
+
+<template id="tpl-experience">
+  <h1>Your experience and plans</h1>
+  <p class="lead">
+    These answers help us judge whether the course suits your current work. Answer
+    honestly — the course caters for a range of backgrounds and there is no advantage
+    in overstating.
+  </p>
+  <div data-questions></div>
+  <div class="err hidden" data-alert></div>
+  <div class="actions"><button class="btn" data-next>Continue</button></div>
+</template>
+
+<template id="tpl-claims">
+  <h1>Honesty check</h1>
+  <p class="lead">Which of these R functions have you used <em>yourself</em>?</p>
+  <div class="warnbox">
+    <strong>Please read.</strong> Some of the names below are not real R functions.
+    Claiming one costs you more than admitting you do not know it. We are not
+    expecting anyone to know all of them — an accurate picture helps us support you better.
+  </div>
+  <table class="claim">
+    <thead>
+      <tr><th>Function</th><th>Used it myself</th><th>Heard of it</th><th>Don't know it</th></tr>
+    </thead>
+    <tbody data-rows></tbody>
+  </table>
+  <div class="err hidden" data-alert></div>
+  <div class="actions"><button class="btn" data-next>Continue</button></div>
+</template>
+
+<template id="tpl-quiz-intro">
+  <h1>Knowledge check</h1>
+  <p class="lead" data-shape></p>
+  <ul class="tight">
+    <li><strong data-timing></strong> per question — the countdown is enforced by the server.</li>
+    <li>You <strong>cannot</strong> go back, and the check cannot be restarted.</li>
+    <li>Each applicant gets a <strong>different draw</strong> of questions, with the
+      answer options shuffled.</li>
+    <li>You are not told which answers were right — only your final score.</li>
+  </ul>
+  <div class="note">
+    Answer from your own knowledge. The point is to place you on the course, not to
+    filter people out on trivia.
+  </div>
+  <div class="err hidden" data-alert></div>
+  <div class="actions"><button class="btn" data-next>Start the knowledge check</button></div>
+</template>
+
+<template id="tpl-question">
+  <div class="qmeta">
+    <span data-progress></span>
+    <span class="cat" data-category></span>
+    <span class="countdown" data-countdown>--</span>
+  </div>
+  <div class="bar"><i data-bar></i></div>
+  <p class="qstem" data-stem></p>
+  <pre class="code hidden" data-code></pre>
+  <div data-options></div>
+  <div class="actions">
+    <button class="btn" data-submit disabled>Submit answer</button>
+    <span class="muted" data-status></span>
+  </div>
+</template>
+
+<template id="tpl-result">
+  <div class="centred">
+    <h1 data-title>Knowledge check complete</h1>
+    <p class="score-big"><span data-score>0</span> / <span data-total>0</span></p>
+    <p class="lead" data-message></p>
+    <p class="muted" data-completed></p>
+  </div>
+  <div class="actions" data-continue-wrap style="justify-content:center">
+    <button class="btn" data-next>Continue to your own work</button>
+  </div>
+</template>
+
+<template id="tpl-written">
+  <h1>Your own work</h1>
+  <p class="lead">
+    Three short answers and your CV. These are read by the selection panel — please
+    answer in your own words.
+  </p>
+
+  <label>1. Describe a dataset you have personally analysed <span class="req">*</span></label>
+  <p class="hint">
+    Say what one row represents, roughly how many rows, the time period, and how location
+    is recorded (GPS coordinates, district names, a grid, or something else). About 80 words.
+  </p>
+  <textarea name="written_dataset" maxlength="900"></textarea>
+  <div class="field-error" data-error="written_dataset"></div>
+
+  <label>2. Paste 5–15 lines of R code that you wrote yourself in the past year <span class="req">*</span></label>
+  <p class="hint">
+    Any code at all — cleaning, plotting, modelling. Add one line saying what it was for.
+    If you have never written R code, write “none” — this will not disqualify you.
+  </p>
+  <textarea name="written_code" class="mono" maxlength="1600"></textarea>
+  <div class="field-error" data-error="written_code"></div>
+
+  <label>3. What is one feature of your own data that would make an ordinary linear
+    regression a poor choice? <span class="req">*</span></label>
+  <p class="hint">About 40 words.</p>
+  <textarea name="written_why_not_ols" maxlength="500"></textarea>
+  <div class="field-error" data-error="written_why_not_ols"></div>
+
+  <label>4. Anything else the panel should know? <span class="opt-tag">(optional)</span></label>
+  <textarea name="written_other" maxlength="600" data-words="300"></textarea>
+  <p class="hint" data-counter-for="written_other"></p>
+  <div class="field-error" data-error="written_other"></div>
+
+  <h2>Motivation and expectations</h2>
+
+  <label>5. Why do you want to take part? <span class="req">*</span></label>
+  <p class="hint">Up to 300 words.</p>
+  <textarea name="motivation" data-words="300"></textarea>
+  <p class="hint" data-counter-for="motivation"></p>
+  <div class="field-error" data-error="motivation"></div>
+
+  <label>6. What do you expect to get out of it? <span class="req">*</span></label>
+  <p class="hint">Up to 300 words.</p>
+  <textarea name="expectations" data-words="300"></textarea>
+  <p class="hint" data-counter-for="expectations"></p>
+  <div class="field-error" data-error="expectations"></div>
+
+  <h2>Your CV</h2>
+
+  <label>7. Upload your CV <span class="req">*</span></label>
+  <p class="hint">
+    <strong>PDF only</strong>, at most <strong>2 pages</strong> and <strong>5&nbsp;MB</strong>.
+    Word documents are not accepted — export to PDF first.
+  </p>
+  <input type="file" name="cv" accept="application/pdf,.pdf">
+  <div class="field-error" data-error="cv"></div>
+
+  <div class="err hidden" data-alert></div>
+  <div class="actions"><button class="btn" data-next>Submit application</button></div>
+</template>
+
+<template id="tpl-done">
+  <div class="centred">
+    <h1>Application submitted</h1>
+    <p class="lead">
+      Thank you — your answers and CV have been received. The selection panel will be
+      in touch by email.
+    </p>
+  </div>
+</template>
+
+<template id="tpl-stopped">
+  <h1 data-title>Thank you for your interest</h1>
+  <p class="lead" data-message></p>
+  <p>
+    We expect to run further courses. Please write to us to be added to the mailing list
+    so we can tell you when the next one opens.
+  </p>
+</template>
+
 <script src="js/api.js"></script>
 <script src="js/applicant.js"></script>
 </body>

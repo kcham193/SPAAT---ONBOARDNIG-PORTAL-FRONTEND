@@ -4,201 +4,239 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Staff Panel — Application Portal</title>
-
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Bootstrap 5 + Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-
-  <!-- Theme -->
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Nunito+Sans:wght@400;600;700&display=swap"
+        rel="stylesheet">
   <link href="css/styles.css" rel="stylesheet">
 </head>
-<body class="panel">
+<body>
+<header class="site-header dark">
+  <img src="img/ihi-logo.jpg" alt="Ifakara Health Institute" class="brand-logo brand-logo-chip">
+  <img src="img/map-logo.png" alt="MAP Project" class="brand-logo brand-logo-chip">
+  <span class="brand">Staff Panel</span>
+  <span class="sub">Applicant review</span>
+  <span class="spacer"></span>
+  <a class="muted" href="index.html">Home</a>
+  <span class="sub hidden" id="nav-username"></span>
+  <button class="btn btn-ghost btn-sm hidden" id="logout-btn">Log out</button>
+</header>
 
-<nav class="navbar navbar-expand-lg navbar-panel">
-  <div class="container">
-    <a class="navbar-brand d-flex align-items-center gap-3" href="index.html">
-      <img src="img/ihi-logo.jpg" alt="Ifakara Health Institute" class="brand-logo brand-logo-ihi brand-logo-chip">
-      <img src="img/map-logo.png" alt="MAP Project" class="brand-logo brand-logo-map brand-logo-chip">
-      <span class="brand-divider brand-divider-dark d-none d-md-inline-block"></span>
-      <span class="brand-text-light d-none d-md-inline">Staff Panel</span>
-    </a>
-    <div class="d-flex align-items-center gap-3">
-      <a class="btn btn-sm btn-outline-light" href="index.html"><i class="bi bi-house-door"></i> Home</a>
-      <div class="d-flex align-items-center gap-3 d-none" id="nav-user">
-        <a href="#" class="btn btn-sm btn-outline-light" id="nav-shortlist"><i class="bi bi-list-ol"></i> Shortlist</a>
-        <span class="text-white-50 small" id="nav-username"></span>
-        <button class="btn btn-sm btn-outline-light" id="logout-btn"><i class="bi bi-box-arrow-right"></i> Log out</button>
-      </div>
-    </div>
-  </div>
-</nav>
-
-<div class="panel-shell">
+<div class="wrap-wide">
 
   <!-- ============ LOGIN ============ -->
-  <section id="view-login" class="d-none">
-    <div class="row justify-content-center">
-      <div class="col-md-5">
-        <div class="text-center">
-          <span class="auth-head-icon"><i class="bi bi-shield-lock"></i></span>
+  <section id="view-login" class="hidden">
+    <div class="card" style="max-width:420px;margin:40px auto">
+      <h1>Staff sign in</h1>
+      <p class="lead">Use your staff account.</p>
+      <div class="err hidden" id="login-alert"></div>
+      <form id="login-form">
+        <label>Username</label>
+        <input type="text" name="username" autocomplete="username">
+        <label>Password</label>
+        <input type="password" name="password" autocomplete="current-password">
+        <div class="actions">
+          <button class="btn" type="submit" id="login-btn">Sign in</button>
         </div>
-        <div class="card">
-          <div class="card-body">
-            <h4 class="mb-1 text-center">Staff sign in</h4>
-            <p class="text-muted small text-center mb-4">Restricted area — token-authenticated staff only.</p>
-            <div class="alert alert-danger d-none" id="login-alert"></div>
-            <form id="login-form">
-              <div class="mb-3">
-                <label class="form-label">Username</label>
-                <input class="form-control form-control-air" name="username" required autocomplete="username">
-              </div>
-              <div class="mb-4">
-                <label class="form-label">Password</label>
-                <input type="password" class="form-control form-control-air" name="password" required autocomplete="current-password">
-              </div>
-              <div class="d-grid">
-                <button class="btn btn-primary btn-lg" type="submit" id="login-btn">
-                  Sign in <i class="bi bi-arrow-right ms-1"></i>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
+      </form>
     </div>
   </section>
 
   <!-- ============ APPLICANTS LIST ============ -->
-  <section id="view-list" class="d-none">
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
-      <div>
-        <h4 class="mb-1">Applicants</h4>
-        <p class="text-muted small mb-0" id="list-count">Loading…</p>
-      </div>
-      <div class="d-flex gap-2 flex-wrap">
-        <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="export-list-btn" title="Download the filtered rows as CSV">
-          <i class="bi bi-download me-1"></i> Export CSV
-        </button>
-        <select class="form-select status-filter" id="status-filter" title="Filter by knowledge-check outcome">
-          <option value="">All outcomes</option>
-          <option value="pass">Passed the quiz</option>
-          <option value="fail">Failed the quiz</option>
-          <option value="pending">Quiz not finished</option>
-        </select>
-        <div class="input-group search-group" style="max-width:340px">
-          <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input class="form-control" id="search-input" placeholder="Name, email or institution…">
-        </div>
-      </div>
+  <section id="view-list" class="hidden">
+    <h1>Applicants <span class="tag tag-mute hidden" id="viewer-badge">View only</span></h1>
+    <p class="lead" id="list-count"></p>
+
+    <div class="toolbar">
+      <button class="btn btn-ghost btn-sm" id="go-shortlist">Build a shortlist &rarr;</button>
     </div>
 
-    <div class="alert alert-danger d-none" id="list-alert"></div>
+    <div class="toolbar">
+      <input class="grow" type="text" id="search-input" placeholder="Name, email or institution…">
+      <select id="status-filter" style="max-width:190px">
+        <option value="">All statuses</option>
+        <option value="pass">Pass</option>
+        <option value="fail">Fail</option>
+        <option value="pending">Pending</option>
+      </select>
+      <button class="btn btn-ghost" id="export-csv">Export CSV</button>
+    </div>
 
-    <!-- Bulk actions (shown when one or more rows are selected) -->
-    <div class="bulk-bar d-none" id="bulk-bar">
-      <span class="fw-semibold me-2" id="bulk-count"></span>
-      <button class="btn btn-sm btn-success-soft" data-bulk="select"><i class="bi bi-check2-circle"></i> Mark selected</button>
-      <button class="btn btn-sm btn-danger-soft" data-bulk="reject"><i class="bi bi-x-circle"></i> Mark rejected</button>
-      <button class="btn btn-sm btn-outline-secondary" data-bulk="pending"><i class="bi bi-arrow-counterclockwise"></i> Reset to pending</button>
-      <button class="btn btn-sm btn-outline-danger ms-auto" data-bulk="delete"><i class="bi bi-trash"></i> Delete</button>
+    <div class="err hidden" id="list-alert"></div>
+
+    <div class="toolbar hidden" id="bulk-bar">
+      <strong id="bulk-count"></strong>
+      <button class="btn btn-sm" data-bulk="select">Mark selected</button>
+      <button class="btn btn-sm btn-ghost" data-bulk="reject">Mark rejected</button>
+      <button class="btn btn-sm btn-ghost" data-bulk="pending">Reset to pending</button>
+      <button class="btn btn-sm btn-danger" data-bulk="delete">Delete</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th style="width:34px"><input type="checkbox" id="select-all" title="Select all"></th>
+            <th>Name</th><th>Institution</th><th>Country</th>
+            <th>Quiz</th><th>Score</th><th>Composite</th><th>Status</th><th>Decision</th><th>Flags</th>
+          </tr>
+        </thead>
+        <tbody id="applicants-body">
+          <tr><td colspan="10" class="muted">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-ghost btn-sm" id="prev-page" disabled>&larr; Prev</button>
+      <button class="btn btn-ghost btn-sm" id="next-page" disabled>Next &rarr;</button>
+    </div>
+  </section>
+
+  <!-- ============ SHORTLIST ============ -->
+  <section id="view-shortlist" class="hidden">
+    <button class="btn btn-ghost btn-sm" id="shortlist-back">&larr; Back to applicants</button>
+
+    <div class="card" style="margin-top:16px">
+      <h1>Shortlist</h1>
+      <p class="lead">
+        Every application ranked on the composite score, recomputed from the stored
+        answers. Floors are satisfied first; the remaining seats fill on merit.
+      </p>
+
+      <div class="stats" id="sl-stats"></div>
+      <div class="note" id="sl-advice"></div>
+
+      <div class="floors">
+        <div>
+          <label for="f_seats">Seats</label>
+          <input type="number" id="f_seats" min="0" value="25">
+        </div>
+        <div>
+          <label for="f_women">Minimum women</label>
+          <input type="number" id="f_women" min="0" value="10">
+        </div>
+        <div>
+          <label for="f_tz">Minimum Tanzania-based</label>
+          <input type="number" id="f_tz" min="0" value="12">
+        </div>
+        <div>
+          <label for="f_inst">Max per institution</label>
+          <input type="number" id="f_inst" min="1" value="3">
+        </div>
+        <div>
+          <label for="f_wait">Waitlist size</label>
+          <input type="number" id="f_wait" min="0" value="10">
+        </div>
+        <div>
+          <label for="f_travel">Travel certainty</label>
+          <select id="f_travel">
+            <option value="prefer" selected>Prefer confirmed</option>
+            <option value="only">Confirmed only</option>
+            <option value="ignore">Ignore</option>
+          </select>
+        </div>
+        <div>
+          <label for="f_bluff">Applicants flagged BLUFF</label>
+          <select id="f_bluff">
+            <option value="1" selected>Exclude</option>
+            <option value="0">Keep</option>
+          </select>
+        </div>
+        <div>
+          <label for="f_pool">Pool</label>
+          <select id="f_pool">
+            <option value="submitted" selected>Completed applications</option>
+            <option value="scored">Finished the knowledge check</option>
+            <option value="all">Everyone who started</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="hint">
+        “Prefer confirmed” fills every seat from applicants with confirmed travel first
+        and uses unconfirmed ones only if seats remain. It costs nothing when confirmed
+        applicants are plentiful and degrades gracefully when they are not.
+      </p>
+
+      <div class="err hidden" id="sl-alert"></div>
+
+      <div class="actions">
+        <button class="btn" id="sl-build">Build shortlist</button>
+        <button class="btn btn-ghost" id="sl-csv">Export full ranking</button>
+        <button class="btn btn-ghost" id="sl-csv-short">Export shortlist + waitlist</button>
+      </div>
+
+      <div id="sl-floors" style="margin-top:16px"></div>
     </div>
 
     <div class="card">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 applicants-table">
+      <div class="table-wrap">
+        <table class="data">
           <thead>
             <tr>
-              <th style="width:36px"><input type="checkbox" class="form-check-input" id="select-all" title="Select all"></th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Institution</th>
-              <th>Country</th>
-              <th>Quiz</th>
-              <th class="text-center">Score</th>
-              <th>Outcome</th>
-              <th>Decision</th>
-              <th></th>
+              <th>#</th><th>Name</th><th>Institution</th><th>Country</th><th>Gender</th>
+              <th>Score</th><th>Quiz</th><th>Honest</th><th>Relev</th><th>Impact</th>
+              <th>Place</th><th>Flags</th>
             </tr>
           </thead>
-          <tbody id="applicants-body">
-            <tr><td colspan="10" class="text-center text-muted py-4">Loading…</td></tr>
+          <tbody id="sl-body">
+            <tr><td colspan="12" class="muted">Loading…</td></tr>
           </tbody>
         </table>
-      </div>
-    </div>
-
-    <div class="d-flex justify-content-end mt-3">
-      <div class="btn-group">
-        <button class="btn btn-outline-secondary btn-sm" id="prev-page" disabled><i class="bi bi-chevron-left"></i> Prev</button>
-        <button class="btn btn-outline-secondary btn-sm" id="next-page" disabled>Next <i class="bi bi-chevron-right"></i></button>
       </div>
     </div>
   </section>
 
   <!-- ============ APPLICANT DETAIL ============ -->
-  <section id="view-detail" class="d-none">
-    <button class="btn btn-link px-0 mb-3 back-link" id="back-to-list">
-      <i class="bi bi-arrow-left"></i> Back to applicants
-    </button>
+  <section id="view-detail" class="hidden">
+    <button class="btn btn-ghost btn-sm" id="back-to-list">&larr; Back to applicants</button>
 
-    <div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-3">
-      <div>
-        <h4 class="mb-1" id="d-name"></h4>
-        <span class="text-muted" id="d-email"></span>
-      </div>
-      <a class="btn btn-outline-primary d-none" id="d-cv" target="_blank" rel="noopener">
-        <i class="bi bi-file-earmark-arrow-down"></i> Download CV
-      </a>
-    </div>
+    <div class="card" style="margin-top:16px">
+      <h1 id="d-name"></h1>
+      <p class="lead" id="d-email"></p>
 
-    <!-- Outcome + decision controls -->
-    <div class="alert alert-danger d-none" id="detail-alert"></div>
-    <div class="decision-strip mb-4">
-      <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
-        <span class="text-muted">Outcome:</span>
+      <div class="toolbar">
         <span id="d-status"></span>
-        <span class="text-muted small ms-1" id="d-score-info"></span>
+        <span id="d-composite"></span>
+        <span class="spacer"></span>
+        <a class="btn btn-ghost btn-sm hidden" id="d-cv" target="_blank" rel="noopener">Download CV</a>
       </div>
-      <div class="d-flex align-items-center flex-wrap gap-2">
-        <span class="text-muted">Decision:</span>
+      <div id="d-flags"></div>
+
+      <div class="err hidden" id="detail-alert"></div>
+
+      <div class="toolbar" id="decision-controls">
+        <span class="muted">Decision:</span>
         <span id="d-decision"></span>
-        <div class="btn-group btn-group-sm ms-2">
-          <button class="btn btn-outline-success" data-decision="select"><i class="bi bi-check2"></i> Select</button>
-          <button class="btn btn-outline-danger" data-decision="reject"><i class="bi bi-x"></i> Reject</button>
-          <button class="btn btn-outline-secondary" data-decision="pending">Pending</button>
-        </div>
-        <button class="btn btn-sm btn-outline-danger ms-auto" id="d-delete">
-          <i class="bi bi-trash"></i> Delete applicant
-        </button>
+        <button class="btn btn-sm" data-decision="select">Select</button>
+        <button class="btn btn-sm btn-ghost" data-decision="reject">Reject</button>
+        <button class="btn btn-sm btn-ghost" data-decision="pending">Pending</button>
+        <button class="btn btn-sm btn-danger" id="d-delete" style="margin-left:auto">Delete applicant</button>
       </div>
     </div>
 
-    <ul class="nav nav-tabs mb-3" role="tablist">
-      <li class="nav-item"><button class="nav-link active" data-tab="profile">Profile</button></li>
-      <li class="nav-item"><button class="nav-link" data-tab="quiz">Quiz breakdown</button></li>
-    </ul>
+    <div class="card">
+      <ul class="tabs">
+        <li><button data-tab="profile" class="on">Profile</button></li>
+        <li><button data-tab="answers">Their answers</button></li>
+        <li><button data-tab="quiz">Quiz breakdown</button></li>
+      </ul>
 
-    <div id="tab-profile">
-      <div class="card">
-        <div class="card-body">
-          <dl class="row mb-0" id="d-fields"></dl>
-        </div>
+      <div id="tab-profile">
+        <dl class="fields" id="d-fields"></dl>
       </div>
-    </div>
 
-    <div id="tab-quiz" class="d-none">
-      <div id="quiz-summary" class="mb-3"></div>
-      <div class="card">
-        <div class="table-responsive">
-          <table class="table align-middle mb-0 quiz-table">
+      <div id="tab-answers" class="hidden">
+        <div id="d-answers"></div>
+      </div>
+
+      <div id="tab-quiz" class="hidden">
+        <div id="quiz-summary"></div>
+        <div class="table-wrap" style="margin-top:12px">
+          <table class="data">
             <thead>
-              <tr><th style="width:36px">#</th><th>Question</th><th>Category</th><th>Submitted</th><th>Correct</th><th class="text-center">Result</th></tr>
+              <tr><th>#</th><th>Question</th><th>Category</th><th>Submitted</th><th>Correct</th><th>Result</th></tr>
             </thead>
             <tbody id="quiz-body"></tbody>
           </table>
@@ -207,106 +245,8 @@
     </div>
   </section>
 
-  <!-- ============ SHORTLIST BUILDER ============ -->
-  <section id="view-shortlist" class="d-none">
-    <button class="btn btn-link px-0 mb-3 back-link" id="back-to-list-from-shortlist">
-      <i class="bi bi-arrow-left"></i> Back to applicants
-    </button>
-
-    <h4 class="mb-1">Shortlist builder</h4>
-    <p class="text-muted small mb-3">
-      Ranks every application on the composite score and allocates seats under
-      the floors below. Nothing is written server-side — this is a preview.
-    </p>
-
-    <div class="alert alert-danger d-none" id="shortlist-alert"></div>
-
-    <div class="card mb-4">
-      <div class="card-body">
-        <form id="shortlist-form">
-          <div class="row g-3">
-            <div class="col-6 col-md-3">
-              <label class="form-label small mb-1">Seats</label>
-              <input type="number" class="form-control form-control-sm" name="seats" value="25" min="1">
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label small mb-1">Min women</label>
-              <input type="number" class="form-control form-control-sm" name="min_women" value="10" min="0">
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label small mb-1">Min Tanzania-based</label>
-              <input type="number" class="form-control form-control-sm" name="min_tanzania" value="12" min="0">
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label small mb-1">Max per institution</label>
-              <input type="number" class="form-control form-control-sm" name="max_per_institution" value="3" min="0">
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label small mb-1">Waitlist</label>
-              <input type="number" class="form-control form-control-sm" name="waitlist" value="10" min="0">
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label small mb-1">Travel</label>
-              <select class="form-select form-select-sm" name="travel">
-                <option value="prefer" selected>Prefer confirmed</option>
-                <option value="only">Only confirmed</option>
-                <option value="ignore">Ignore</option>
-              </select>
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label small mb-1">Pool</label>
-              <select class="form-select form-select-sm" name="pool">
-                <option value="submitted" selected>Submitted only</option>
-                <option value="scored">Scored (quiz done)</option>
-                <option value="all">All</option>
-              </select>
-            </div>
-            <div class="col-6 col-md-3 d-flex align-items-end pb-1">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="sl-drop-bluff" name="drop_bluff" checked>
-                <label class="form-check-label small" for="sl-drop-bluff">Drop bluffs</label>
-              </div>
-            </div>
-          </div>
-          <div class="d-flex flex-wrap gap-2 mt-3">
-            <button type="submit" class="btn btn-primary btn-sm" id="build-shortlist-btn">
-              <i class="bi bi-play-fill me-1"></i> Build shortlist
-            </button>
-            <button type="button" class="btn btn-outline-secondary btn-sm d-none" id="export-shortlist-btn">
-              <i class="bi bi-download me-1"></i> Export CSV
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div id="shortlist-floors"></div>
-    <div id="shortlist-advice"></div>
-
-    <div class="card d-none" id="shortlist-table-wrap">
-      <div class="table-responsive">
-        <table class="table align-middle mb-0 applicants-table">
-          <thead>
-            <tr>
-              <th style="width:44px">#</th>
-              <th>Name</th>
-              <th>Country</th>
-              <th>Institution</th>
-              <th class="text-center">Score</th>
-              <th>Flags</th>
-              <th>Pick</th>
-            </tr>
-          </thead>
-          <tbody id="shortlist-body"></tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script src="js/api.js"></script>
 <script src="js/panel.js"></script>
 </body>

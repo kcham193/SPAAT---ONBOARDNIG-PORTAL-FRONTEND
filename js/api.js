@@ -1,9 +1,9 @@
 // Shared API helpers. This SPA is served from a DIFFERENT origin than the
-// Django backend (e.g. Vercel -> PythonAnywhere), so requests are cross-origin.
-// The backend must allow this origin via django-cors-headers -- see README.md.
-
-// Backend base URL. Change PYTHONANYWHERE_USERNAME to the actual production host.
-// Local dev falls back to a Django dev server on 127.0.0.1:8000.
+// Django backend (Vercel -> PythonAnywhere), so requests are cross-origin.
+// The backend has django-cors-headers configured to allow our Vercel URL.
+//
+// Production points at the live backend; local dev falls back to the
+// standard Django runserver on 127.0.0.1:8000.
 const PROD_API = "https://mapdet.pythonanywhere.com/api";
 const DEV_API  = "http://127.0.0.1:8000/api";
 
@@ -11,8 +11,8 @@ const API = (location.hostname === "localhost" || location.hostname === "127.0.0
   ? DEV_API
   : PROD_API;
 
-// Thrown for any non-2xx response. `data` holds the parsed body (field-error map
-// for 400s, {detail: ...} for auth errors, etc.) so callers can render it.
+// Thrown for any non-2xx response. `data` holds the parsed body (field-error
+// map for 400s, {detail: ...} for auth errors, etc.) so callers can render it.
 class ApiError extends Error {
   constructor(status, data) {
     super(`API error ${status}`);
@@ -29,9 +29,9 @@ async function parseBody(res) {
   return await res.text();
 }
 
-// JSON request. `token` (optional) is sent as a DRF Token header for admin calls.
-// No CSRF header: cross-origin requests without cookies don't need it, and DRF
-// TokenAuthentication is CSRF-exempt.
+// JSON request. `token` (optional) is sent as a DRF Token header for admin
+// endpoints. No CSRF header: cross-origin requests carry no session cookie,
+// and DRF TokenAuthentication is CSRF-exempt.
 async function apiJson(method, path, body, token) {
   const headers = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
