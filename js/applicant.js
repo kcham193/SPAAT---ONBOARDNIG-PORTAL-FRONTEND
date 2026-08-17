@@ -103,13 +103,14 @@ const screens = {
   intro:       document.getElementById("screen-intro"),
   question:    document.getElementById("screen-question"),
   result:      document.getElementById("screen-result"),
-  docs:        document.getElementById("screen-docs"),
   final:       document.getElementById("screen-final"),
   done:        document.getElementById("screen-done"),
 };
 
-// Pill row on the stepper (7 items).
-const STEP_ORDER = ["form", "eligibility", "experience", "claims", "quiz", "docs", "submit"];
+// Pill row on the stepper (6 items). Matches the reference portal — no
+// separate "Documents" step; motivation + expectations + CV live on the
+// same screen as the written prompts.
+const STEP_ORDER = ["form", "eligibility", "experience", "claims", "quiz", "submit"];
 
 // Screens with no pill are prep and ineligible (both terminal-ish).
 const SCREEN_TO_STEP = {
@@ -120,7 +121,6 @@ const SCREEN_TO_STEP = {
   intro: "quiz",
   question: "quiz",
   result: "quiz",
-  docs: "docs",
   final: "submit",
   done: "submit",
 };
@@ -144,12 +144,11 @@ const finalAlert = document.getElementById("final-alert");
 const eligAlert = document.getElementById("elig-alert");
 const expAlert = document.getElementById("exp-alert");
 const claimsAlert = document.getElementById("claims-alert");
-const docsAlert = document.getElementById("docs-alert");
 const introAlert = document.getElementById("intro-alert");
 
 function clearFieldErrors() {
   document.querySelectorAll("[data-error]").forEach((el) => (el.textContent = ""));
-  [formAlert, finalAlert, eligAlert, expAlert, claimsAlert, docsAlert].forEach((a) => a && a.classList.add("d-none"));
+  [formAlert, finalAlert, eligAlert, expAlert, claimsAlert].forEach((a) => a && a.classList.add("d-none"));
 }
 
 function renderFieldErrors(err, alertBox) {
@@ -548,19 +547,19 @@ function showResult(result) {
   }
 }
 
-// ------------------------------------------------- Step 6: documents (motivation, expectations, CV)
-// Result screen "Continue to final step" button now routes to the docs screen
-// (motivation + expectations + CV) rather than straight to the written-prompts
-// form.
+// ------------------------------------------------- Step 6: submit (motivation, expectations, written prompts + CV)
+// Result screen "Continue to final step" routes straight to the single
+// finalize screen. The reference portal collects everything in one form
+// with one Submit button; this SPA follows the same pattern.
 document.getElementById("go-final").addEventListener("click", () => {
   clearFieldErrors();
-  showScreen("docs");
+  showScreen("final");
 });
 
-const docsForm = document.getElementById("docs-form");
+const finalForm = document.getElementById("final-form");
 
 // Live word count under motivation + expectations. Browser handles the
-// "required" check now that docs-form is no longer novalidate; JS enforces
+// required check via HTML5 (novalidate removed on final-form); JS enforces
 // the 300-word cap on submit.
 function countWords(text) {
   const trimmed = (text || "").trim();
@@ -568,9 +567,9 @@ function countWords(text) {
 }
 function wireupWordCounters() {
   const maxFromConfig = configMaxWords();
-  docsForm.querySelectorAll("textarea[data-max-words]").forEach((ta) => {
+  finalForm.querySelectorAll("textarea[data-max-words]").forEach((ta) => {
     const max = maxFromConfig || parseInt(ta.dataset.maxWords, 10) || 300;
-    const counter = docsForm.querySelector(`.word-counter[data-counter-for="${ta.name}"]`);
+    const counter = finalForm.querySelector(`.word-counter[data-counter-for="${ta.name}"]`);
     if (!counter) return;
     const update = () => {
       const n = countWords(ta.value);
@@ -582,39 +581,25 @@ function wireupWordCounters() {
   });
 }
 
-docsForm.addEventListener("submit", (e) => {
+finalForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   clearFieldErrors();
-  // Values are held on the DOM inputs and combined with the written prompts
-  // on Step 7 submit — no network call here. Enforce the word cap using the
-  // limit from /config/, falling back to data-max-words.
+  // Enforce word cap client-side before the network round trip.
   const max = configMaxWords();
   let overLimit = false;
-  docsForm.querySelectorAll("textarea[data-max-words]").forEach((ta) => {
+  finalForm.querySelectorAll("textarea[data-max-words]").forEach((ta) => {
     if (countWords(ta.value) > max) {
-      const target = docsForm.querySelector(`[data-error="${ta.name}"]`);
+      const target = finalForm.querySelector(`[data-error="${ta.name}"]`);
       if (target) target.textContent = `Please limit to ${max} words.`;
       overLimit = true;
     }
   });
   if (overLimit) return;
-  showScreen("final");
-});
-
-// ------------------------------------------------- Step 7: submit (written prompts + finalize)
-const finalForm = document.getElementById("final-form");
-finalForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  clearFieldErrors();
   const btn = document.getElementById("submit-final");
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Submitting…`;
   try {
-    // Combine Step 6 (docs) + Step 7 (written) into one multipart request.
-    const combined = new FormData();
-    for (const [k, v] of new FormData(docsForm)) combined.append(k, v);
-    for (const [k, v] of new FormData(finalForm)) combined.append(k, v);
-    await apiForm("POST", `/applications/${LS.appId}/finalize/`, combined);
+    await apiForm("POST", `/applications/${LS.appId}/finalize/`, new FormData(finalForm));
     // Keep LS.appId so a reload after this hits /status/ and lands on Done
     // again — clearing it here would strand a returning applicant on the prep
     // splash and let them start a duplicate application.
