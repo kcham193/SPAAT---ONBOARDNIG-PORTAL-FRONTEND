@@ -491,27 +491,43 @@ document.getElementById("go-final").addEventListener("click", () => {
 });
 
 const docsForm = document.getElementById("docs-form");
+
+// Live word count under motivation + expectations. Browser handles the
+// "required" check now that docs-form is no longer novalidate; JS enforces
+// the 300-word cap on submit.
+function countWords(text) {
+  const trimmed = (text || "").trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+docsForm.querySelectorAll("textarea[data-max-words]").forEach((ta) => {
+  const max = parseInt(ta.dataset.maxWords, 10) || 300;
+  const counter = docsForm.querySelector(`.word-counter[data-counter-for="${ta.name}"]`);
+  if (!counter) return;
+  const update = () => {
+    const n = countWords(ta.value);
+    counter.textContent = `${n} / ${max} words`;
+    counter.classList.toggle("over-limit", n > max);
+  };
+  ta.addEventListener("input", update);
+  update();
+});
+
 docsForm.addEventListener("submit", (e) => {
   e.preventDefault();
   clearFieldErrors();
-  // Client-side check that every required docs field is filled. We DON'T POST
-  // here — the values are held on the form elements and combined with the
-  // written prompts on Step 7 submit, so the whole finalize hits the backend
-  // in a single request.
-  const fd = new FormData(docsForm);
-  const missing = [];
-  ["motivation", "expectations"].forEach((k) => {
-    if (!String(fd.get(k) || "").trim()) missing.push(k);
+  // Values are held on the DOM inputs and combined with the written prompts
+  // on Step 7 submit — no network call here. Enforce the 300-word cap on
+  // the two textareas, then advance.
+  let overLimit = false;
+  docsForm.querySelectorAll("textarea[data-max-words]").forEach((ta) => {
+    const max = parseInt(ta.dataset.maxWords, 10) || 300;
+    if (countWords(ta.value) > max) {
+      const target = docsForm.querySelector(`[data-error="${ta.name}"]`);
+      if (target) target.textContent = `Please limit to ${max} words.`;
+      overLimit = true;
+    }
   });
-  const cv = fd.get("cv");
-  if (!cv || (cv instanceof File && cv.size === 0)) missing.push("cv");
-  if (missing.length) {
-    missing.forEach((k) => {
-      const target = document.querySelector(`#docs-form [data-error="${k}"]`);
-      if (target) target.textContent = "This field is required.";
-    });
-    return;
-  }
+  if (overLimit) return;
   showScreen("final");
 });
 

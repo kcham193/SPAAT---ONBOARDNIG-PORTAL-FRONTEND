@@ -258,6 +258,21 @@ input[type="file"].form-control::-webkit-file-upload-button {
   min-height: 1rem;
 }
 
+/* Live word counters under motivation / expectations textareas.
+   The bare .word-counter reads as muted; .over-limit switches to the
+   danger color when the applicant crosses the 300-word cap. */
+.word-counter {
+  font-size: .78rem;
+  color: var(--muted);
+  white-space: nowrap;
+  margin-left: 1rem;
+  padding-top: .2rem;
+}
+.word-counter.over-limit {
+  color: var(--danger);
+  font-weight: 600;
+}
+
 /* -------------------------------------------------------------- Buttons */
 .btn {
   border-radius: var(--radius-pill);

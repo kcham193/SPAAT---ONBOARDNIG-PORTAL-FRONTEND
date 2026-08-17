@@ -93,15 +93,15 @@
       <div class="col-md-4">
         <div class="feature-card h-100">
           <div class="feature-icon"><i class="bi bi-chat-square-quote-fill"></i></div>
-          <h5>Motivation &amp; expectations</h5>
-          <p class="text-muted small mb-0">Why you're applying + what you hope to gain — <strong>300 words each</strong>.</p>
+          <h5>Motivation</h5>
+          <p class="text-muted small mb-0">Why you're applying — <strong>300 words max</strong>.</p>
         </div>
       </div>
       <div class="col-md-4">
         <div class="feature-card h-100">
-          <div class="feature-icon"><i class="bi bi-code-slash"></i></div>
-          <h5>Written prompts</h5>
-          <p class="text-muted small mb-0">A dataset you've analysed, 5–15 lines of your own R code, and a sentence on OLS for spatial data.</p>
+          <div class="feature-icon"><i class="bi bi-bullseye"></i></div>
+          <h5>Expectations</h5>
+          <p class="text-muted small mb-0">What you hope to gain — <strong>300 words max</strong>.</p>
         </div>
       </div>
     </div>
@@ -124,7 +124,7 @@
 
         <div class="alert alert-danger d-none" id="form-alert"></div>
 
-        <form id="application-form" novalidate>
+        <form id="application-form">
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">First name</label>
@@ -138,12 +138,18 @@
             </div>
             <div class="col-md-6">
               <label class="form-label">Email</label>
-              <input type="email" class="form-control form-control-air" name="email" required>
+              <input type="email" class="form-control form-control-air" name="email"
+                     autocomplete="email" inputmode="email" required
+                     title="Please enter a valid email address (e.g. name@example.com).">
               <div class="field-error" data-error="email"></div>
             </div>
             <div class="col-md-6">
               <label class="form-label">Phone</label>
-              <input class="form-control form-control-air" name="phone" required>
+              <input type="tel" class="form-control form-control-air" name="phone"
+                     autocomplete="tel" inputmode="tel" required
+                     pattern="^\+?[0-9\s\-()]{6,}$"
+                     placeholder="+255 712 345 678"
+                     title="Digits only, with an optional leading +, spaces, dashes or parentheses.">
               <div class="field-error" data-error="phone"></div>
             </div>
             <div class="col-md-6">
@@ -164,10 +170,8 @@
               <label class="form-label">Gender</label>
               <select class="form-select form-control-air" name="gender" required>
                 <option value="" selected disabled>Choose…</option>
-                <option>Female</option>
                 <option>Male</option>
-                <option>Non-binary</option>
-                <option>Prefer not to say</option>
+                <option>Female</option>
               </select>
               <div class="field-error" data-error="gender"></div>
             </div>
@@ -530,19 +534,27 @@
 
         <div class="alert alert-danger d-none" id="docs-alert"></div>
 
-        <form id="docs-form" novalidate>
+        <form id="docs-form">
           <div class="row g-3">
             <div class="col-12">
               <label class="form-label">Motivation <span class="text-muted">(300 words max)</span></label>
               <textarea class="form-control form-control-air" name="motivation" rows="5" required
+                        data-max-words="300"
                         placeholder="Why do you want to join the program?"></textarea>
-              <div class="field-error" data-error="motivation"></div>
+              <div class="d-flex justify-content-between align-items-start mt-1">
+                <div class="field-error flex-grow-1" data-error="motivation"></div>
+                <small class="text-muted word-counter" data-counter-for="motivation">0 / 300 words</small>
+              </div>
             </div>
             <div class="col-12">
               <label class="form-label">Expectations <span class="text-muted">(300 words max)</span></label>
               <textarea class="form-control form-control-air" name="expectations" rows="5" required
+                        data-max-words="300"
                         placeholder="What do you hope to gain from this program?"></textarea>
-              <div class="field-error" data-error="expectations"></div>
+              <div class="d-flex justify-content-between align-items-start mt-1">
+                <div class="field-error flex-grow-1" data-error="expectations"></div>
+                <small class="text-muted word-counter" data-counter-for="expectations">0 / 300 words</small>
+              </div>
             </div>
             <div class="col-12">
               <label class="form-label">CV upload <span class="text-muted">(PDF only, 2 pages max)</span></label>
