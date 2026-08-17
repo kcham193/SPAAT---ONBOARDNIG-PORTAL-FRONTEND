@@ -371,7 +371,11 @@ function startCountdown(deadlineIso) {
     els.countdown.classList.toggle("danger", remaining <= 5);
     if (remaining <= 0) {
       stopCountdown();
-      els.status.textContent = "Time's up — submitting…";
+      // Freeze the option buttons so the applicant can see time ran out
+      // and that we're moving on automatically.
+      els.options.querySelectorAll(".quiz-option").forEach((o) => (o.disabled = true));
+      els.countdown.textContent = "0s";
+      els.status.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Time's up — loading next…`;
       submitAnswer(true);
     }
   };
@@ -419,19 +423,37 @@ async function submitAnswer(auto) {
   stopCountdown();
   els.submit.disabled = true;
   const answer = selectedAnswer || "";
-  try {
-    const res = await apiJson("POST", `/quiz/${LS.sessId}/answer/`, { answer });
-    if (res.finished) {
-      showResult(res.result);
-    } else {
-      renderQuestion(res.next);
+  // Two attempts: covers a transient network hiccup at the moment the timer
+  // fires an auto-submit. The deadline is server-authoritative, so retrying
+  // won't game the clock — a late answer stays timed_out server-side.
+  let lastErr = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await apiJson("POST", `/quiz/${LS.sessId}/answer/`, { answer });
+      if (res.finished) {
+        showResult(res.result);
+      } else {
+        renderQuestion(res.next);
+      }
+      submitting = false;
+      return;
+    } catch (err) {
+      lastErr = err;
+      console.error(`Quiz answer submit failed (attempt ${attempt + 1}):`, err);
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 700));
+      }
     }
-  } catch (err) {
-    els.status.textContent = "Could not submit answer. Retrying is disabled to protect the timer.";
-    console.error(err);
-  } finally {
-    submitting = false;
   }
+  els.status.innerHTML =
+    `<span class="text-danger">Couldn't reach the server. </span>` +
+    `<a href="#" id="q-retry">Try again</a>`;
+  const retry = document.getElementById("q-retry");
+  if (retry) retry.addEventListener("click", (e) => {
+    e.preventDefault();
+    submitAnswer(auto);
+  });
+  submitting = false;
 }
 
 // ---------------------------------------------------------------- Step 5c: result
