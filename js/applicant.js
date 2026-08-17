@@ -454,7 +454,7 @@ function showResult(result) {
     icon.className = "bi bi-patch-check-fill";
     iconWrap.className = "auth-head-icon success";
     message.textContent =
-      "You've met the required score. One last step: a few written prompts and your CV.";
+      "You've met the required score. One last step: your motivation, expectations and CV.";
   } else {
     icon.className = "bi bi-info-circle-fill";
     iconWrap.className = "auth-head-icon muted";

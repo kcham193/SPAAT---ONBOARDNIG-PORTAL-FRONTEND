@@ -87,16 +87,16 @@
       </div>
       <div class="col-md-4">
         <div class="feature-card h-100">
-          <div class="feature-icon"><i class="bi bi-database-fill-check"></i></div>
-          <h5>A dataset you've analysed</h5>
-          <p class="text-muted small mb-0">A short description of one spatial dataset you've worked with.</p>
+          <div class="feature-icon"><i class="bi bi-chat-square-quote-fill"></i></div>
+          <h5>Motivation</h5>
+          <p class="text-muted small mb-0">Why you're applying — <strong>300 words max</strong>.</p>
         </div>
       </div>
       <div class="col-md-4">
         <div class="feature-card h-100">
-          <div class="feature-icon"><i class="bi bi-code-slash"></i></div>
-          <h5>5–15 lines of your R code</h5>
-          <p class="text-muted small mb-0">Something you actually wrote — paste it in the final step.</p>
+          <div class="feature-icon"><i class="bi bi-bullseye"></i></div>
+          <h5>Expectations</h5>
+          <p class="text-muted small mb-0">What you hope to gain — <strong>300 words max</strong>.</p>
         </div>
       </div>
     </div>
@@ -518,8 +518,8 @@
       <div class="card-body">
         <h4 class="mb-1">Final step</h4>
         <p class="text-muted small mb-4">
-          Three short prompts about your work, plus your CV. The panel judges
-          quality, so short and honest is fine.
+          Tell us why you're applying, what you hope to gain, and upload your
+          CV to complete your application.
         </p>
 
         <div class="alert alert-danger d-none" id="final-alert"></div>
@@ -527,28 +527,16 @@
         <form id="final-form" novalidate>
           <div class="row g-3">
             <div class="col-12">
-              <label class="form-label">A dataset you have analysed <span class="text-muted">(a sentence or two)</span></label>
-              <textarea class="form-control form-control-air" name="written_dataset" rows="3" required
-                        placeholder="What was it, and what did you do with it?"></textarea>
-              <div class="field-error" data-error="written_dataset"></div>
+              <label class="form-label">Motivation <span class="text-muted">(300 words max)</span></label>
+              <textarea class="form-control form-control-air" name="motivation" rows="5" required
+                        placeholder="Why do you want to join the program?"></textarea>
+              <div class="field-error" data-error="motivation"></div>
             </div>
             <div class="col-12">
-              <label class="form-label">Some of your own R code <span class="text-muted">(5–15 lines)</span></label>
-              <textarea class="form-control form-control-air font-monospace" name="written_code" rows="8" required
-                        placeholder="Paste a snippet you actually wrote."></textarea>
-              <div class="field-error" data-error="written_code"></div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Why would OLS be a poor choice for spatial data? <span class="text-muted">(a sentence is fine)</span></label>
-              <textarea class="form-control form-control-air" name="written_why_not_ols" rows="3" required
-                        placeholder="One thought, briefly."></textarea>
-              <div class="field-error" data-error="written_why_not_ols"></div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Anything else for the panel? <span class="text-muted">(optional)</span></label>
-              <textarea class="form-control form-control-air" name="written_other" rows="3"
-                        placeholder="Context you'd like reviewers to see."></textarea>
-              <div class="field-error" data-error="written_other"></div>
+              <label class="form-label">Expectations <span class="text-muted">(300 words max)</span></label>
+              <textarea class="form-control form-control-air" name="expectations" rows="5" required
+                        placeholder="What do you hope to gain from this program?"></textarea>
+              <div class="field-error" data-error="expectations"></div>
             </div>
             <div class="col-12">
               <label class="form-label">CV upload <span class="text-muted">(PDF only, 2 pages max)</span></label>
