@@ -31,6 +31,7 @@
     <div class="d-flex align-items-center gap-3">
       <a class="btn btn-sm btn-outline-light" href="index.html"><i class="bi bi-house-door"></i> Home</a>
       <div class="d-flex align-items-center gap-3 d-none" id="nav-user">
+        <a href="#" class="btn btn-sm btn-outline-light" id="nav-shortlist"><i class="bi bi-list-ol"></i> Shortlist</a>
         <span class="text-white-50 small" id="nav-username"></span>
         <button class="btn btn-sm btn-outline-light" id="logout-btn"><i class="bi bi-box-arrow-right"></i> Log out</button>
       </div>
@@ -81,6 +82,9 @@
         <p class="text-muted small mb-0" id="list-count">Loading…</p>
       </div>
       <div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="export-list-btn" title="Download the filtered rows as CSV">
+          <i class="bi bi-download me-1"></i> Export CSV
+        </button>
         <select class="form-select status-filter" id="status-filter" title="Filter by knowledge-check outcome">
           <option value="">All outcomes</option>
           <option value="pass">Passed the quiz</option>
@@ -199,6 +203,102 @@
             <tbody id="quiz-body"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SHORTLIST BUILDER ============ -->
+  <section id="view-shortlist" class="d-none">
+    <button class="btn btn-link px-0 mb-3 back-link" id="back-to-list-from-shortlist">
+      <i class="bi bi-arrow-left"></i> Back to applicants
+    </button>
+
+    <h4 class="mb-1">Shortlist builder</h4>
+    <p class="text-muted small mb-3">
+      Ranks every application on the composite score and allocates seats under
+      the floors below. Nothing is written server-side — this is a preview.
+    </p>
+
+    <div class="alert alert-danger d-none" id="shortlist-alert"></div>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <form id="shortlist-form">
+          <div class="row g-3">
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-1">Seats</label>
+              <input type="number" class="form-control form-control-sm" name="seats" value="25" min="1">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-1">Min women</label>
+              <input type="number" class="form-control form-control-sm" name="min_women" value="10" min="0">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-1">Min Tanzania-based</label>
+              <input type="number" class="form-control form-control-sm" name="min_tanzania" value="12" min="0">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-1">Max per institution</label>
+              <input type="number" class="form-control form-control-sm" name="max_per_institution" value="3" min="0">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-1">Waitlist</label>
+              <input type="number" class="form-control form-control-sm" name="waitlist" value="10" min="0">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-1">Travel</label>
+              <select class="form-select form-select-sm" name="travel">
+                <option value="prefer" selected>Prefer confirmed</option>
+                <option value="only">Only confirmed</option>
+                <option value="ignore">Ignore</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-1">Pool</label>
+              <select class="form-select form-select-sm" name="pool">
+                <option value="submitted" selected>Submitted only</option>
+                <option value="scored">Scored (quiz done)</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3 d-flex align-items-end pb-1">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="sl-drop-bluff" name="drop_bluff" checked>
+                <label class="form-check-label small" for="sl-drop-bluff">Drop bluffs</label>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button type="submit" class="btn btn-primary btn-sm" id="build-shortlist-btn">
+              <i class="bi bi-play-fill me-1"></i> Build shortlist
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm d-none" id="export-shortlist-btn">
+              <i class="bi bi-download me-1"></i> Export CSV
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="shortlist-floors"></div>
+    <div id="shortlist-advice"></div>
+
+    <div class="card d-none" id="shortlist-table-wrap">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0 applicants-table">
+          <thead>
+            <tr>
+              <th style="width:44px">#</th>
+              <th>Name</th>
+              <th>Country</th>
+              <th>Institution</th>
+              <th class="text-center">Score</th>
+              <th>Flags</th>
+              <th>Pick</th>
+            </tr>
+          </thead>
+          <tbody id="shortlist-body"></tbody>
+        </table>
       </div>
     </div>
   </section>

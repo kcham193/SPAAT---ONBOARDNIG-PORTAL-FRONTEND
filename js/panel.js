@@ -6,15 +6,48 @@ const TOKEN = {
 };
 
 const views = {
-  login:  document.getElementById("view-login"),
-  list:   document.getElementById("view-list"),
-  detail: document.getElementById("view-detail"),
+  login:     document.getElementById("view-login"),
+  list:      document.getElementById("view-list"),
+  detail:    document.getElementById("view-detail"),
+  shortlist: document.getElementById("view-shortlist"),
 };
 const navUser = document.getElementById("nav-user");
+
+// Current staff user — populated on login and on /admin/me/ boot. Drives the
+// permissions UI (viewers see no decision/bulk/CSV buttons; reviewers do).
+let USER = null;
 
 function showView(name) {
   Object.entries(views).forEach(([k, el]) => el.classList.toggle("d-none", k !== name));
   navUser.classList.toggle("d-none", name === "login");
+}
+
+// Show/hide review-only and export-only affordances based on the current
+// user's role. The backend still re-checks — this is a UX layer, not a
+// security boundary.
+function applyPermissions() {
+  const canReview = !!(USER && USER.can_review);
+  const canExport = !!(USER && USER.can_export);
+
+  // Decision buttons, delete, bulk toolbar, row checkboxes — reviewers only.
+  document.querySelectorAll("[data-decision]").forEach((el) => el.classList.toggle("d-none", !canReview));
+  document.querySelectorAll("[data-bulk]").forEach((el) => el.classList.toggle("d-none", !canReview));
+  const bulkBar = document.getElementById("bulk-bar");
+  if (bulkBar && !canReview) bulkBar.classList.add("d-none");
+  const dDelete = document.getElementById("d-delete");
+  if (dDelete) dDelete.classList.toggle("d-none", !canReview);
+
+  // Row-select column is more surgical — hide the select-all header and the
+  // per-row checkboxes get hidden via CSS class on the table body.
+  const selectAll = document.getElementById("select-all");
+  if (selectAll) selectAll.style.display = canReview ? "" : "none";
+  document.body.classList.toggle("no-review", !canReview);
+
+  // CSV export buttons — reviewers only.
+  const exportList = document.getElementById("export-list-btn");
+  if (exportList) exportList.classList.toggle("d-none", !canExport);
+  const exportShort = document.getElementById("export-shortlist-btn");
+  if (exportShort && !canExport) exportShort.classList.add("d-none");
 }
 
 // Any admin call that 401s means the token is bad -> back to login.
@@ -43,7 +76,9 @@ loginForm.addEventListener("submit", async (e) => {
       password: fd.get("password"),
     });
     TOKEN.set(data.token);
+    USER = data.user || null;
     setNavUser(data.user);
+    applyPermissions();
     loginForm.reset();
     loadList();
   } catch (err) {
@@ -394,13 +429,192 @@ function esc(s) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+// ------------------------------------------------------------------ CSV export (list)
+// GET /admin/applications/export/ carries the Authorization header (a plain
+// <a href> cannot), so we fetch the response as a blob and hand it to the
+// browser via a temporary <a download>.
+async function downloadFilteredCsv() {
+  const params = new URLSearchParams();
+  if (currentSearch) params.set("search", currentSearch);
+  if (currentStatus) params.set("status", currentStatus);
+  const qs = params.toString() ? `?${params}` : "";
+  const btn = document.getElementById("export-list-btn");
+  if (btn) btn.disabled = true;
+  try {
+    // Base URL from js/api.js's const API — deliberately not going through
+    // apiJson because it forces Accept: JSON and tries to parse a CSV body.
+    const res = await fetch(`${API}/admin/applications/export/${qs}`, {
+      headers: { Authorization: `Token ${TOKEN.get()}` },
+    });
+    if (res.status === 401) { TOKEN.set(null); showView("login"); return; }
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      alert(`Export failed (HTTP ${res.status}): ${body.slice(0, 300)}`);
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const filename =
+      (res.headers.get("Content-Disposition") || "").match(/filename="?([^"]+)"?/)?.[1] ||
+      `applicants-${new Date().toISOString().slice(0, 10)}.csv`;
+    const a = Object.assign(document.createElement("a"), { href: url, download: filename });
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+document.getElementById("export-list-btn").addEventListener("click", downloadFilteredCsv);
+
+// ------------------------------------------------------------------ Shortlist builder
+document.getElementById("nav-shortlist").addEventListener("click", (e) => {
+  e.preventDefault();
+  showView("shortlist");
+});
+document.getElementById("back-to-list-from-shortlist").addEventListener("click", () => loadList());
+
+const shortlistForm = document.getElementById("shortlist-form");
+const shortlistAlert = document.getElementById("shortlist-alert");
+let lastShortlistBody = null;   // remembered so Export can send the same settings
+
+function shortlistPayload() {
+  const fd = new FormData(shortlistForm);
+  const num = (k, fallback) => {
+    const raw = fd.get(k);
+    const n = raw != null ? parseInt(raw, 10) : NaN;
+    return Number.isFinite(n) ? n : fallback;
+  };
+  return {
+    seats: num("seats", 25),
+    min_women: num("min_women", 10),
+    min_tanzania: num("min_tanzania", 12),
+    max_per_institution: num("max_per_institution", 3),
+    waitlist: num("waitlist", 10),
+    travel: fd.get("travel") || "prefer",
+    pool: fd.get("pool") || "submitted",
+    drop_bluff: !!fd.get("drop_bluff"),
+  };
+}
+
+shortlistForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  shortlistAlert.classList.add("d-none");
+  const btn = document.getElementById("build-shortlist-btn");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Building…`;
+  try {
+    const body = shortlistPayload();
+    lastShortlistBody = body;
+    const res = await adminCall("POST", "/admin/shortlist/", body);
+    renderShortlist(res);
+    // Export button appears only if backend granted export permission.
+    const exportBtn = document.getElementById("export-shortlist-btn");
+    if (exportBtn && USER && USER.can_export) exportBtn.classList.remove("d-none");
+  } catch (err) {
+    if (err.status !== 401) {
+      shortlistAlert.textContent = (err.data && err.data.detail) || "Could not build the shortlist.";
+      shortlistAlert.classList.remove("d-none");
+    }
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="bi bi-play-fill me-1"></i> Build shortlist`;
+  }
+});
+
+function renderShortlist(res) {
+  const floorsEl = document.getElementById("shortlist-floors");
+  const adviceEl = document.getElementById("shortlist-advice");
+  const wrap = document.getElementById("shortlist-table-wrap");
+  const body = document.getElementById("shortlist-body");
+  const floors = res.floors || {};
+  const stats = res.stats || {};
+
+  // Floors summary. `*_met: false` shows in danger to flag an unmeetable floor.
+  const chip = (label, required, achieved, met) => {
+    const cls = met === false ? "bg-danger-soft" : "bg-success-soft";
+    return `<span class="badge ${cls} me-2 mb-2">${label}: ${achieved} / ${required}</span>`;
+  };
+  const parts = [];
+  if (floors.women_required != null) parts.push(chip("Women", floors.women_required, floors.women || 0, floors.women_met));
+  if (floors.tanzania_required != null) parts.push(chip("Tanzania-based", floors.tanzania_required, floors.tanzania || 0, floors.tanzania_met));
+  if (floors.largest_institution != null) parts.push(chip("Largest institution seats", floors.max_per_institution || "-", floors.largest_institution, true));
+  if (floors.travel_unconfirmed != null) parts.push(chip("Travel unconfirmed picks", "-", floors.travel_unconfirmed, true));
+  if (stats.median_score != null) parts.push(chip("Median score of picks", "-", stats.median_score, true));
+  floorsEl.innerHTML = parts.length
+    ? `<div class="mb-2">${parts.join("")}</div>`
+    : "";
+
+  adviceEl.innerHTML = stats.advice
+    ? `<div class="alert alert-info small">${esc(stats.advice)}</div>`
+    : "";
+
+  body.innerHTML = "";
+  (res.rows || []).forEach((r) => {
+    const pick = r.shortlisted
+      ? '<span class="badge bg-success-soft">Shortlisted</span>'
+      : (r.waitlisted ? '<span class="badge bg-warning-soft">Waitlist</span>' : "");
+    const flags = (r.flags || []).map((f) => `<span class="badge bg-secondary-soft me-1">${esc(f)}</span>`).join("");
+    const score = r.score != null ? r.score.toFixed ? r.score.toFixed(1) : r.score : "-";
+    body.insertAdjacentHTML("beforeend", `
+      <tr class="${r.shortlisted ? "cursor-pointer" : ""}">
+        <td class="fw-semibold">${r.rank != null ? r.rank : ""}</td>
+        <td>${esc(r.first_name || "")} ${esc(r.last_name || "")}</td>
+        <td>${esc(r.country_of_residence || "")}</td>
+        <td>${esc(r.institution || "")}</td>
+        <td class="text-center">${score}</td>
+        <td>${flags}</td>
+        <td>${pick}</td>
+      </tr>`);
+  });
+  wrap.classList.remove("d-none");
+}
+
+document.getElementById("export-shortlist-btn").addEventListener("click", async () => {
+  if (!lastShortlistBody) return;
+  const btn = document.getElementById("export-shortlist-btn");
+  btn.disabled = true;
+  try {
+    const body = { ...lastShortlistBody, only_shortlist: false };
+    const res = await fetch(`${API}/admin/shortlist/export/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Token ${TOKEN.get()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if (res.status === 401) { TOKEN.set(null); showView("login"); return; }
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      alert(`Export failed (HTTP ${res.status}): ${text.slice(0, 300)}`);
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const filename =
+      (res.headers.get("Content-Disposition") || "").match(/filename="?([^"]+)"?/)?.[1] ||
+      `shortlist-${new Date().toISOString().slice(0, 10)}.csv`;
+    const a = Object.assign(document.createElement("a"), { href: url, download: filename });
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // ------------------------------------------------------------------ Boot
 (async function boot() {
   if (!TOKEN.get()) { showView("login"); return; }
   // Validate the saved token before showing anything staff-only.
   try {
     const user = await apiJson("GET", "/admin/me/", undefined, TOKEN.get());
+    USER = user || null;
     setNavUser(user);
+    applyPermissions();
     loadList();
   } catch {
     TOKEN.set(null);

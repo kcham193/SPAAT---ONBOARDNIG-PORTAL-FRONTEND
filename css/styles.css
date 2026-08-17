@@ -748,6 +748,12 @@ body.panel { background: var(--page-bg); }
 .badge.bg-warning-soft   { background: #fef3e0; color: #b57414; }
 .badge.bg-danger-soft    { background: #fdecee; color: #c9384c; }
 
+/* Row checkboxes: hidden for viewers (no-review body class set by panel.js). */
+body.no-review .row-check,
+body.no-review #select-all {
+  visibility: hidden;
+}
+
 /* -------------------------------------------------------------- Bulk action bar */
 .bulk-bar {
   background: #fff;
