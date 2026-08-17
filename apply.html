@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Apply — GeoMAP Onboarding Portal</title>
+  <title>Apply — Application Portal</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,7 +26,7 @@
       <img src="img/ihi-logo.jpg" alt="Ifakara Health Institute" class="brand-logo brand-logo-ihi">
       <img src="img/map-logo.png" alt="MAP Project" class="brand-logo brand-logo-map">
       <span class="brand-divider d-none d-md-inline-block"></span>
-      <span class="brand-text d-none d-md-inline">GeoMAP Onboarding Portal</span>
+      <span class="brand-text d-none d-md-inline">Application Portal</span>
     </a>
     <div class="d-flex gap-2">
       <a class="btn btn-sm btn-outline-secondary" href="index.html"><i class="bi bi-arrow-left"></i> Home</a>
@@ -266,20 +266,20 @@
         <form id="final-form" novalidate>
           <div class="row g-3">
             <div class="col-12">
-              <label class="form-label">Motivation</label>
+              <label class="form-label">Motivation <span class="text-muted">(300 words max)</span></label>
               <textarea class="form-control form-control-air" name="motivation" rows="4" required
                         placeholder="Why do you want to join the program?"></textarea>
               <div class="field-error" data-error="motivation"></div>
             </div>
             <div class="col-12">
-              <label class="form-label">Expectations</label>
+              <label class="form-label">Expectations <span class="text-muted">(300 words max)</span></label>
               <textarea class="form-control form-control-air" name="expectations" rows="4" required
                         placeholder="What do you hope to gain from this program?"></textarea>
               <div class="field-error" data-error="expectations"></div>
             </div>
             <div class="col-12">
-              <label class="form-label">CV upload <span class="text-muted">(PDF/DOC)</span></label>
-              <input type="file" class="form-control" name="cv" accept=".pdf,.doc,.docx" required>
+              <label class="form-label">CV upload <span class="text-muted">(PDF only, 2 pages max)</span></label>
+              <input type="file" class="form-control" name="cv" accept="application/pdf,.pdf" required>
               <div class="field-error" data-error="cv"></div>
             </div>
           </div>
