@@ -118,18 +118,30 @@ function clearFieldErrors() {
 
 function renderFieldErrors(err, alertBox) {
   const box = alertBox || formAlert;
-  const fail = (text) => { box.textContent = text; box.classList.remove("d-none"); };
+  // Guarantee text is never empty so the red banner never shows blank.
+  const fail = (text) => {
+    box.textContent = text || "Submission failed. Check the browser console (F12).";
+    box.classList.remove("d-none");
+  };
 
-  // Log the raw error to the browser console so it's diagnosable from DevTools
-  // regardless of what we choose to show the user.
+  // Log the raw error every time so DevTools has the ground truth even when
+  // the user-facing text is short.
   console.error("Form submission error:", err);
 
-  // The submit handlers pass err.data straight in; keep that path working, but
-  // also accept a full ApiError (with .status and .data) or a native fetch
-  // TypeError so we can produce a useful message either way.
-  const data = err && Object.prototype.hasOwnProperty.call(err, "data") ? err.data : err;
-  const status = err && err.status;
+  // Network / CORS failure — apiJson threw a native TypeError before it
+  // could build an ApiError, so there's no status and no data.
+  if (!err || !("status" in err)) {
+    fail(
+      "Couldn't reach the server (this usually means a CORS or network problem). " +
+      "Open DevTools (F12) → Network tab, re-submit, and share the failing request."
+    );
+    return;
+  }
 
+  const data = err.data;
+  const status = err.status;
+
+  // Standard DRF response: {field: [msgs]} or {detail: "..."}
   if (data && typeof data === "object" && !Array.isArray(data)) {
     let handledAny = false;
     Object.entries(data).forEach(([field, msgs]) => {
@@ -138,23 +150,18 @@ function renderFieldErrors(err, alertBox) {
       if (target) { target.textContent = text; handledAny = true; }
       else if (field === "detail") { fail(text); handledAny = true; }
     });
-    if (!handledAny) fail(JSON.stringify(data));
+    if (!handledAny) fail(`Server responded with ${status}: ${JSON.stringify(data)}`);
     return;
   }
 
+  // HTML or plain-text error page — surface at least the first line.
   if (typeof data === "string" && data.trim()) {
-    // Server returned plain text or an HTML error page — surface at least the
-    // first line so the user isn't staring at "something went wrong".
-    fail(data.split("\n")[0].slice(0, 240));
+    fail(`Server responded with ${status}: ${data.split("\n")[0].slice(0, 200)}`);
     return;
   }
 
-  if (status) {
-    fail(`Server responded with ${status}. Please try again in a moment.`);
-    return;
-  }
-
-  fail("Couldn't reach the server. Check your connection and try again — details are in the browser console (F12).");
+  // No useful body at all.
+  fail(`Server responded with ${status}. Please try again in a moment.`);
 }
 
 // ---------------------------------------------------------------- Prep splash
