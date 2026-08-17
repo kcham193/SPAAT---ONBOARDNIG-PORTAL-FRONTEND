@@ -52,7 +52,7 @@
         </a>
       </div>
       <p class="text-muted small mt-3 mb-0">
-        <i class="bi bi-calendar-event me-1"></i> <strong>Apply by 30 August 2026</strong>
+        <i class="bi bi-calendar-event me-1"></i> <strong>Apply by <span data-deadline>30 August 2026</span></strong>
         <span class="mx-1">·</span>
         <i class="bi bi-clock me-1"></i> Takes about 15 minutes, including a short timed quiz
       </p>
@@ -210,7 +210,7 @@
   <div class="container text-center">
     <h3 class="mb-2">Ready to apply?</h3>
     <p class="mb-4 opacity-90">
-      Applications close on <strong>30 August 2026</strong>. The form takes a
+      Applications close on <strong><span data-deadline>30 August 2026</span></strong>. The form takes a
       few minutes and the quiz that follows takes about ten.
     </p>
     <a class="btn btn-light btn-lg px-4" href="apply.html" id="cta-bottom">
@@ -251,6 +251,26 @@
     const bot = document.getElementById("cta-bottom");
     if (top) top.innerHTML = 'Continue Application <i class="bi bi-arrow-right ms-1"></i>';
     if (bot) bot.innerHTML = 'Continue your application <i class="bi bi-arrow-right ms-1"></i>';
+  })();
+
+  // Ask the backend for the canonical deadline and fill the two [data-deadline]
+  // spans. Landing needs this too — the hardcoded fallback is just a placeholder
+  // for when the API is unreachable.
+  (async function () {
+    const API = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+      ? "http://127.0.0.1:8000/api"
+      : "https://mapdet.pythonanywhere.com/api";
+    try {
+      const res = await fetch(`${API}/config/`);
+      if (!res.ok) return;
+      const config = await res.json();
+      if (!config || !config.deadline) return;
+      document.querySelectorAll("[data-deadline]").forEach((el) => {
+        el.textContent = config.deadline;
+      });
+    } catch (err) {
+      console.error("Could not load /api/config/ for landing deadline", err);
+    }
   })();
 </script>
 </body>

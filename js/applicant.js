@@ -15,49 +15,48 @@ const LS = {
   set sessId(v){ v ? localStorage.setItem("session_id", v) : localStorage.removeItem("session_id"); },
 };
 
-// ---------------------------------------------------------------- Country list
-// Populates the Nationality and Country-of-residence <select>s. Sent as plain
-// text to the backend, which stores whichever label was chosen.
-const COUNTRIES = [
-  "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda",
-  "Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain",
-  "Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia",
-  "Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso",
-  "Burundi","Cabo Verde","Cambodia","Cameroon","Canada","Central African Republic",
-  "Chad","Chile","China","Colombia","Comoros","Congo (Brazzaville)",
-  "Congo (Democratic Republic)","Costa Rica","Côte d'Ivoire","Croatia","Cuba",
-  "Cyprus","Czechia","Denmark","Djibouti","Dominica","Dominican Republic",
-  "Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia",
-  "Eswatini","Ethiopia","Fiji","Finland","France","Gabon","Gambia","Georgia",
-  "Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau",
-  "Guyana","Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran",
-  "Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan",
-  "Kenya","Kiribati","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho",
-  "Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar",
-  "Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania",
-  "Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro",
-  "Morocco","Mozambique","Myanmar (Burma)","Namibia","Nauru","Nepal",
-  "Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea",
-  "North Macedonia","Norway","Oman","Pakistan","Palau","Palestine","Panama",
-  "Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar",
-  "Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia",
-  "Saint Vincent and the Grenadines","Samoa","San Marino","São Tomé and Príncipe",
-  "Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore",
-  "Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea",
-  "South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland",
-  "Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo",
-  "Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu",
-  "Uganda","Ukraine","United Arab Emirates","United Kingdom","United States",
-  "Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Yemen",
-  "Zambia","Zimbabwe",
-];
+// ---------------------------------------------------------------- Portal config
+// Everything the applicant page needs before it renders anything:
+// deadline, word/CV limits, grouped country dropdown, quiz shape.
+// Loaded once on boot; hardcoded fallbacks apply only if /config/ is down.
+let CONFIG = null;
+const CONFIG_FALLBACK = {
+  deadline: "",
+  limits: { max_words: 300, cv_max_mb: 5, cv_max_pages: 2 },
+  countries: [],
+};
 
-(function populateCountrySelects() {
+async function loadConfig() {
+  try {
+    CONFIG = await apiJson("GET", "/config/");
+  } catch (err) {
+    console.error("Could not load /api/config/ — falling back to defaults", err);
+    CONFIG = CONFIG_FALLBACK;
+  }
+}
+
+function populateCountrySelects() {
   const selects = document.querySelectorAll(".country-select");
   if (!selects.length) return;
-  const optionsHtml = COUNTRIES.map((c) => `<option value="${c}">${c}</option>`).join("");
-  selects.forEach((sel) => sel.insertAdjacentHTML("beforeend", optionsHtml));
-})();
+  const groups = (CONFIG && CONFIG.countries) || [];
+  const html = groups.map((g) => `
+    <optgroup label="${g.label}">
+      ${g.countries.map((c) => `<option value="${c}">${c}</option>`).join("")}
+    </optgroup>
+  `).join("");
+  selects.forEach((sel) => sel.insertAdjacentHTML("beforeend", html));
+}
+
+function fillDeadlinePlaceholders() {
+  const deadline = (CONFIG && CONFIG.deadline) || "";
+  document.querySelectorAll("[data-deadline]").forEach((el) => {
+    if (deadline) el.textContent = deadline;
+  });
+}
+
+function configMaxWords() {
+  return (CONFIG && CONFIG.limits && CONFIG.limits.max_words) || 300;
+}
 
 // ---------------------------------------------------------------- Screens + stepper
 const screens = {
@@ -362,11 +361,18 @@ function stopCountdown() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
 }
 
-function startCountdown(deadlineIso) {
+function startCountdown(seconds) {
   stopCountdown();
-  currentDeadline = new Date(deadlineIso).getTime();
+  // Server sends `remaining_seconds`; we count against a monotonic clock
+  // (performance.now) rather than Date.now / deadline, so a device clock
+  // out of sync doesn't wreck the countdown. Server still enforces the
+  // real deadline on the answer POST.
+  const started = performance.now();
+  const total = Math.max(0, Number(seconds) || 0);
+  currentDeadline = started + total * 1000;
   const tick = () => {
-    const remaining = Math.max(0, Math.round((currentDeadline - Date.now()) / 1000));
+    const elapsed = (performance.now() - started) / 1000;
+    const remaining = Math.max(0, Math.round(total - elapsed));
     els.countdown.textContent = `${remaining}s`;
     els.countdown.classList.toggle("danger", remaining <= 5);
     if (remaining <= 0) {
@@ -411,7 +417,12 @@ function renderQuestion(payload) {
     els.options.appendChild(b);
   });
 
-  startCountdown(payload.deadline);
+  // Prefer server-computed remaining_seconds (clamped by the backend);
+  // fall back to time_limit_seconds if a call site didn't include it.
+  const secs = payload.remaining_seconds != null
+    ? payload.remaining_seconds
+    : (payload.time_limit_seconds != null ? payload.time_limit_seconds : 25);
+  startCountdown(secs);
 }
 
 els.submit.addEventListener("click", () => submitAnswer(false));
@@ -521,28 +532,31 @@ function countWords(text) {
   const trimmed = (text || "").trim();
   return trimmed ? trimmed.split(/\s+/).length : 0;
 }
-docsForm.querySelectorAll("textarea[data-max-words]").forEach((ta) => {
-  const max = parseInt(ta.dataset.maxWords, 10) || 300;
-  const counter = docsForm.querySelector(`.word-counter[data-counter-for="${ta.name}"]`);
-  if (!counter) return;
-  const update = () => {
-    const n = countWords(ta.value);
-    counter.textContent = `${n} / ${max} words`;
-    counter.classList.toggle("over-limit", n > max);
-  };
-  ta.addEventListener("input", update);
-  update();
-});
+function wireupWordCounters() {
+  const maxFromConfig = configMaxWords();
+  docsForm.querySelectorAll("textarea[data-max-words]").forEach((ta) => {
+    const max = maxFromConfig || parseInt(ta.dataset.maxWords, 10) || 300;
+    const counter = docsForm.querySelector(`.word-counter[data-counter-for="${ta.name}"]`);
+    if (!counter) return;
+    const update = () => {
+      const n = countWords(ta.value);
+      counter.textContent = `${n} / ${max} words`;
+      counter.classList.toggle("over-limit", n > max);
+    };
+    ta.addEventListener("input", update);
+    update();
+  });
+}
 
 docsForm.addEventListener("submit", (e) => {
   e.preventDefault();
   clearFieldErrors();
   // Values are held on the DOM inputs and combined with the written prompts
-  // on Step 7 submit — no network call here. Enforce the 300-word cap on
-  // the two textareas, then advance.
+  // on Step 7 submit — no network call here. Enforce the word cap using the
+  // limit from /config/, falling back to data-max-words.
+  const max = configMaxWords();
   let overLimit = false;
   docsForm.querySelectorAll("textarea[data-max-words]").forEach((ta) => {
-    const max = parseInt(ta.dataset.maxWords, 10) || 300;
     if (countWords(ta.value) > max) {
       const target = docsForm.querySelector(`[data-error="${ta.name}"]`);
       if (target) target.textContent = `Please limit to ${max} words.`;
@@ -585,7 +599,7 @@ function resetJourney() {
   LS.sessId = null;
 }
 
-(async function boot() {
+async function boot() {
   if (!LS.appId) { resetJourney(); showScreen("prep"); return; }
 
   // Always re-validate with /status/ before trusting the stored id — the
@@ -630,4 +644,16 @@ function resetJourney() {
   if (!done.claims)      { showScreen("claims"); loadClaims(); return; }
 
   showScreen("intro");
+}
+
+// ---------------------------------------------------------------- Bootstrap
+// Load /config/ first so country dropdowns, deadline text, and word-limit
+// counters have real values, then hand off to boot() which runs the
+// existing resume logic.
+(async function bootstrap() {
+  await loadConfig();
+  populateCountrySelects();
+  fillDeadlinePlaceholders();
+  wireupWordCounters();
+  await boot();
 })();
