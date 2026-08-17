@@ -55,6 +55,7 @@ const COUNTRIES = [
 })();
 
 const screens = {
+  prep:     document.getElementById("screen-prep"),
   form:     document.getElementById("screen-form"),
   intro:    document.getElementById("screen-intro"),
   question: document.getElementById("screen-question"),
@@ -105,6 +106,18 @@ function renderFieldErrors(data, alertBox) {
   } else {
     fail("Something went wrong. Please try again.");
   }
+}
+
+// ---------------------------------------------------------------- Step 0: prep
+// Preparation splash — reminds the applicant to have CV / motivation /
+// expectations ready before the flow starts. Shown once for fresh visitors;
+// returning users with saved state resume past this screen automatically.
+const beginBtn = document.getElementById("begin-application");
+if (beginBtn) {
+  beginBtn.addEventListener("click", () => {
+    clearFieldErrors();
+    showScreen("form");
+  });
 }
 
 // ---------------------------------------------------------------- Step 1: details
@@ -333,7 +346,9 @@ function resetJourney() {
 }
 
 (async function boot() {
-  if (!LS.appId) { resetJourney(); showScreen("form"); return; }
+  // Fresh visit → show the preparation splash so applicants know what to
+  // have ready before the details form.
+  if (!LS.appId) { resetJourney(); showScreen("prep"); return; }
 
   // Always re-validate with the server before resuming — the stored application
   // may have been deleted, and we don't want to leave the user stuck on a
@@ -343,7 +358,7 @@ function resetJourney() {
     state = await apiJson("GET", `/applications/${LS.appId}/status/`);
   } catch (err) {
     resetJourney();
-    showScreen("form");
+    showScreen("prep");
     return;
   }
 

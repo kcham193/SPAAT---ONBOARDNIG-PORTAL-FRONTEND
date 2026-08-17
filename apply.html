@@ -61,8 +61,50 @@
     </li>
   </ul>
 
+  <!-- ============ STEP 0: BEFORE YOU BEGIN (prep splash) ============ -->
+  <section id="screen-prep" class="screen d-none">
+    <div class="text-center">
+      <span class="auth-head-icon"><i class="bi bi-clipboard2-check-fill"></i></span>
+    </div>
+    <div class="text-center mb-4">
+      <h4 class="mt-1">Before you begin</h4>
+      <p class="text-muted mb-0">
+        Have these ready — you'll submit them at the end of the application,
+        after the knowledge check.
+      </p>
+    </div>
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="feature-card h-100">
+          <div class="feature-icon"><i class="bi bi-file-earmark-pdf-fill"></i></div>
+          <h5>Your CV</h5>
+          <p class="text-muted small mb-0"><strong>2 pages max</strong>, in PDF format only.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card h-100">
+          <div class="feature-icon"><i class="bi bi-chat-square-quote-fill"></i></div>
+          <h5>Motivation</h5>
+          <p class="text-muted small mb-0">Why you're applying — <strong>300 words max</strong>.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card h-100">
+          <div class="feature-icon"><i class="bi bi-bullseye"></i></div>
+          <h5>Expectations</h5>
+          <p class="text-muted small mb-0">What you hope to gain — <strong>300 words max</strong>.</p>
+        </div>
+      </div>
+    </div>
+    <div class="text-center">
+      <button class="btn btn-primary btn-lg px-5" id="begin-application">
+        Begin application <i class="bi bi-arrow-right ms-1"></i>
+      </button>
+    </div>
+  </section>
+
   <!-- ============ STEP 1: DETAILS FORM (no CV / motivation / expectations) ============ -->
-  <section id="screen-form" class="screen">
+  <section id="screen-form" class="screen d-none">
     <div class="card">
       <div class="card-body">
         <h4 class="mb-1">Your details</h4>

@@ -483,6 +483,17 @@ body.landing { background: #ffffff; }
 }
 .feature-card h5 { font-weight: 600; margin-bottom: .6rem; }
 
+/* Prep splash inside apply.html uses tighter cards to fit the 820px shell */
+#screen-prep .feature-card { padding: 1.25rem 1rem; }
+#screen-prep .feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 20px;
+  margin-bottom: .75rem;
+}
+#screen-prep .feature-card h5 { font-size: 1rem; margin-bottom: .35rem; }
+
 /* -------------------------------------------------------------- Topic grid */
 .topic-grid {
   display: grid;
