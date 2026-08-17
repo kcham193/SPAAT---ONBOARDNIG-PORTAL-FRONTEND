@@ -52,6 +52,40 @@ function fillDeadlinePlaceholders() {
   document.querySelectorAll("[data-deadline]").forEach((el) => {
     if (deadline) el.textContent = deadline;
   });
+  const duration = (CONFIG && CONFIG.duration) || "";
+  document.querySelectorAll("[data-duration]").forEach((el) => {
+    if (duration) el.textContent = duration;
+  });
+  const limits = (CONFIG && CONFIG.limits) || {};
+  if (limits.max_words) {
+    document.querySelectorAll("[data-max-words]").forEach((el) => {
+      // Only replace text inside <span data-max-words>…</span>; leave textarea
+      // attributes alone (those are the fallback for word counters).
+      if (el.tagName === "SPAN") el.textContent = String(limits.max_words);
+    });
+  }
+  if (limits.cv_max_pages != null) {
+    document.querySelectorAll("[data-cv-max-pages]").forEach((el) => (el.textContent = String(limits.cv_max_pages)));
+  }
+  if (limits.cv_max_mb != null) {
+    document.querySelectorAll("[data-cv-max-mb]").forEach((el) => (el.textContent = String(limits.cv_max_mb)));
+  }
+}
+
+// Step 0 checklist: Begin stays disabled until every box is ticked.
+function wireupPrepChecklist() {
+  const list = document.getElementById("prep-checklist");
+  const begin = document.getElementById("begin-application");
+  const printBtn = document.getElementById("print-checklist");
+  if (!list || !begin) return;
+  const boxes = list.querySelectorAll('input[type="checkbox"]');
+  const sync = () => {
+    const allTicked = [...boxes].every((b) => b.checked);
+    begin.disabled = !allTicked;
+  };
+  boxes.forEach((b) => b.addEventListener("change", sync));
+  sync();
+  if (printBtn) printBtn.addEventListener("click", () => window.print());
 }
 
 function configMaxWords() {
@@ -654,6 +688,7 @@ async function boot() {
   await loadConfig();
   populateCountrySelects();
   fillDeadlinePlaceholders();
+  wireupPrepChecklist();
   wireupWordCounters();
   await boot();
 })();

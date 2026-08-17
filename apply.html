@@ -69,7 +69,7 @@
     </li>
   </ul>
 
-  <!-- ============ STEP 0: BEFORE YOU BEGIN (prep splash) ============ -->
+  <!-- ============ STEP 0: BEFORE YOU BEGIN (prep checklist) ============ -->
   <section id="screen-prep" class="screen d-none">
     <div class="text-center">
       <span class="auth-head-icon"><i class="bi bi-clipboard2-check-fill"></i></span>
@@ -77,36 +77,69 @@
     <div class="text-center mb-4">
       <h4 class="mt-1">Before you begin</h4>
       <p class="text-muted mb-1">
-        The application has six steps and takes about 20 minutes. Have these
-        ready — you'll need them for the final step, after the knowledge check.
+        The application has six steps and takes <span data-duration>about 15 minutes</span>. Tick
+        each item once you have it ready — Begin unlocks when everything is checked.
       </p>
       <p class="mb-0"><span class="badge-pill-brand"><i class="bi bi-calendar-event me-1"></i>Apply by <span data-deadline>30 August 2026</span></span></p>
     </div>
-    <div class="row g-3 mb-4">
-      <div class="col-md-4">
-        <div class="feature-card h-100">
-          <div class="feature-icon"><i class="bi bi-file-earmark-pdf-fill"></i></div>
-          <h5>Your CV</h5>
-          <p class="text-muted small mb-0"><strong>PDF format only</strong>, 2 pages max.</p>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="feature-card h-100">
-          <div class="feature-icon"><i class="bi bi-chat-square-quote-fill"></i></div>
-          <h5>Motivation</h5>
-          <p class="text-muted small mb-0">Why you're applying — <strong>300 words max</strong>.</p>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="feature-card h-100">
-          <div class="feature-icon"><i class="bi bi-bullseye"></i></div>
-          <h5>Expectations</h5>
-          <p class="text-muted small mb-0">What you hope to gain — <strong>300 words max</strong>.</p>
-        </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <ul class="list-unstyled mb-0 prep-checklist" id="prep-checklist">
+          <li class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="prep-cv">
+            <label class="form-check-label" for="prep-cv">
+              My CV is a <strong>PDF</strong>, no more than <strong><span data-cv-max-pages>2</span> pages</strong>
+              and under <strong><span data-cv-max-mb>5</span> MB</strong>.
+            </label>
+          </li>
+          <li class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="prep-motivation">
+            <label class="form-check-label" for="prep-motivation">
+              I have my <strong>motivation</strong> written (why I'm applying) — no more than
+              <strong><span data-max-words>300</span> words</strong>.
+            </label>
+          </li>
+          <li class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="prep-expectations">
+            <label class="form-check-label" for="prep-expectations">
+              I have my <strong>expectations</strong> written (what I hope to gain) — no more than
+              <strong><span data-max-words>300</span> words</strong>.
+            </label>
+          </li>
+          <li class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="prep-dataset">
+            <label class="form-check-label" for="prep-dataset">
+              I can name a <strong>spatial dataset I've analysed</strong> and describe what I did with it.
+            </label>
+          </li>
+          <li class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="prep-code">
+            <label class="form-check-label" for="prep-code">
+              I have <strong>5–15 lines of my own R code</strong> to paste (or I'll answer "none").
+            </label>
+          </li>
+          <li class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="prep-ols">
+            <label class="form-check-label" for="prep-ols">
+              I can explain, in one sentence, <strong>why OLS is a poor choice for spatial data</strong>.
+            </label>
+          </li>
+        </ul>
       </div>
     </div>
-    <div class="text-center">
-      <button class="btn btn-primary btn-lg px-5" id="begin-application">
+
+    <div class="alert alert-warning small" role="alert">
+      <i class="bi bi-info-circle-fill me-1"></i>
+      There is <strong>no travel, accommodation or subsistence support</strong>. You will need to
+      cover those costs (or arrange for them to be covered) if you're selected.
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+      <button type="button" class="btn btn-outline-secondary" id="print-checklist">
+        <i class="bi bi-printer me-1"></i> Print this list
+      </button>
+      <button class="btn btn-primary btn-lg px-4" id="begin-application" disabled>
         Begin application <i class="bi bi-arrow-right ms-1"></i>
       </button>
     </div>
@@ -147,9 +180,9 @@
               <label class="form-label">Phone</label>
               <input type="tel" class="form-control form-control-air" name="phone"
                      autocomplete="tel" inputmode="tel" required
-                     pattern="^\+?[0-9\s\-()]{6,}$"
+                     pattern="^\+(?:[\s\-()]*\d){8,15}[\s\-()]*$"
                      placeholder="+255 712 345 678"
-                     title="Digits only, with an optional leading +, spaces, dashes or parentheses.">
+                     title="Must start with + and a country code, then 8–15 digits. Spaces, dashes and parentheses are allowed. Local 07… numbers are rejected — the panel needs to be able to dial you from abroad.">
               <div class="field-error" data-error="phone"></div>
             </div>
             <div class="col-md-6">
