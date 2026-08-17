@@ -116,9 +116,20 @@ function clearFieldErrors() {
   [formAlert, finalAlert, eligAlert, expAlert, claimsAlert].forEach((a) => a && a.classList.add("d-none"));
 }
 
-function renderFieldErrors(data, alertBox) {
+function renderFieldErrors(err, alertBox) {
   const box = alertBox || formAlert;
   const fail = (text) => { box.textContent = text; box.classList.remove("d-none"); };
+
+  // Log the raw error to the browser console so it's diagnosable from DevTools
+  // regardless of what we choose to show the user.
+  console.error("Form submission error:", err);
+
+  // The submit handlers pass err.data straight in; keep that path working, but
+  // also accept a full ApiError (with .status and .data) or a native fetch
+  // TypeError so we can produce a useful message either way.
+  const data = err && Object.prototype.hasOwnProperty.call(err, "data") ? err.data : err;
+  const status = err && err.status;
+
   if (data && typeof data === "object" && !Array.isArray(data)) {
     let handledAny = false;
     Object.entries(data).forEach(([field, msgs]) => {
@@ -128,9 +139,22 @@ function renderFieldErrors(data, alertBox) {
       else if (field === "detail") { fail(text); handledAny = true; }
     });
     if (!handledAny) fail(JSON.stringify(data));
-  } else {
-    fail("Something went wrong. Please try again.");
+    return;
   }
+
+  if (typeof data === "string" && data.trim()) {
+    // Server returned plain text or an HTML error page — surface at least the
+    // first line so the user isn't staring at "something went wrong".
+    fail(data.split("\n")[0].slice(0, 240));
+    return;
+  }
+
+  if (status) {
+    fail(`Server responded with ${status}. Please try again in a moment.`);
+    return;
+  }
+
+  fail("Couldn't reach the server. Check your connection and try again — details are in the browser console (F12).");
 }
 
 // ---------------------------------------------------------------- Prep splash
@@ -156,7 +180,7 @@ form.addEventListener("submit", async (e) => {
     LS.sessId = null;
     showScreen("eligibility");
   } catch (err) {
-    renderFieldErrors(err.data, formAlert);
+    renderFieldErrors(err, formAlert);
   } finally {
     btn.disabled = false;
     btn.innerHTML = `Next <i class="bi bi-arrow-right ms-1"></i>`;
@@ -202,7 +226,7 @@ document.getElementById("eligibility-form").addEventListener("submit", async (e)
     if (res && res.eligible === false) { showIneligible(res.reason); return; }
     showScreen("experience");
   } catch (err) {
-    renderFieldErrors(err.data, eligAlert);
+    renderFieldErrors(err, eligAlert);
   } finally {
     btn.disabled = false;
     btn.innerHTML = `Continue <i class="bi bi-arrow-right ms-1"></i>`;
@@ -232,7 +256,7 @@ document.getElementById("experience-form").addEventListener("submit", async (e) 
     showScreen("claims");
     loadClaims();
   } catch (err) {
-    renderFieldErrors(err.data, expAlert);
+    renderFieldErrors(err, expAlert);
   } finally {
     btn.disabled = false;
     btn.innerHTML = `Continue <i class="bi bi-arrow-right ms-1"></i>`;
@@ -272,7 +296,7 @@ document.getElementById("submit-claims").addEventListener("click", async () => {
     await apiJson("POST", `/applications/${LS.appId}/claims/`, { claims });
     showScreen("intro");
   } catch (err) {
-    renderFieldErrors(err.data, claimsAlert);
+    renderFieldErrors(err, claimsAlert);
   } finally {
     btn.disabled = false;
     btn.innerHTML = `Continue to the quiz <i class="bi bi-arrow-right ms-1"></i>`;
@@ -467,7 +491,7 @@ finalForm.addEventListener("submit", async (e) => {
     // splash and let them start a duplicate application.
     showScreen("done");
   } catch (err) {
-    renderFieldErrors(err.data, finalAlert);
+    renderFieldErrors(err, finalAlert);
   } finally {
     btn.disabled = false;
     btn.innerHTML = `Submit application <i class="bi bi-check2-circle ms-1"></i>`;
