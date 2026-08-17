@@ -43,20 +43,24 @@
       <span class="step-circle">1</span>
       <span class="step-label">Details</span>
     </li>
-    <li class="step" data-step="intro">
+    <li class="step" data-step="eligibility">
       <span class="step-circle">2</span>
+      <span class="step-label">Eligibility</span>
+    </li>
+    <li class="step" data-step="experience">
+      <span class="step-circle">3</span>
+      <span class="step-label">Experience</span>
+    </li>
+    <li class="step" data-step="claims">
+      <span class="step-circle">4</span>
+      <span class="step-label">Honesty</span>
+    </li>
+    <li class="step" data-step="quiz">
+      <span class="step-circle">5</span>
       <span class="step-label">Quiz</span>
     </li>
-    <li class="step" data-step="question">
-      <span class="step-circle">3</span>
-      <span class="step-label">Questions</span>
-    </li>
-    <li class="step" data-step="result">
-      <span class="step-circle">4</span>
-      <span class="step-label">Result</span>
-    </li>
-    <li class="step" data-step="final">
-      <span class="step-circle">5</span>
+    <li class="step" data-step="submit">
+      <span class="step-circle">6</span>
       <span class="step-label">Submit</span>
     </li>
   </ul>
@@ -69,8 +73,8 @@
     <div class="text-center mb-4">
       <h4 class="mt-1">Before you begin</h4>
       <p class="text-muted mb-0">
-        Have these ready — you'll submit them at the end of the application,
-        after the knowledge check.
+        The application has six steps and takes about 20 minutes. Have these
+        ready — you'll need them for the final step, after the knowledge check.
       </p>
     </div>
     <div class="row g-3 mb-4">
@@ -78,21 +82,21 @@
         <div class="feature-card h-100">
           <div class="feature-icon"><i class="bi bi-file-earmark-pdf-fill"></i></div>
           <h5>Your CV</h5>
-          <p class="text-muted small mb-0"><strong>2 pages max</strong>, in PDF format only.</p>
+          <p class="text-muted small mb-0"><strong>PDF format only</strong>, 2 pages max.</p>
         </div>
       </div>
       <div class="col-md-4">
         <div class="feature-card h-100">
-          <div class="feature-icon"><i class="bi bi-chat-square-quote-fill"></i></div>
-          <h5>Motivation</h5>
-          <p class="text-muted small mb-0">Why you're applying — <strong>300 words max</strong>.</p>
+          <div class="feature-icon"><i class="bi bi-database-fill-check"></i></div>
+          <h5>A dataset you've analysed</h5>
+          <p class="text-muted small mb-0">A short description of one spatial dataset you've worked with.</p>
         </div>
       </div>
       <div class="col-md-4">
         <div class="feature-card h-100">
-          <div class="feature-icon"><i class="bi bi-bullseye"></i></div>
-          <h5>Expectations</h5>
-          <p class="text-muted small mb-0">What you hope to gain — <strong>300 words max</strong>.</p>
+          <div class="feature-icon"><i class="bi bi-code-slash"></i></div>
+          <h5>5–15 lines of your R code</h5>
+          <p class="text-muted small mb-0">Something you actually wrote — paste it in the final step.</p>
         </div>
       </div>
     </div>
@@ -109,8 +113,8 @@
       <div class="card-body">
         <h4 class="mb-1">Your details</h4>
         <p class="text-muted small mb-4">
-          All fields are required. Next you'll take a short knowledge check —
-          your CV and motivation are collected at the end.
+          All fields are required. A few short steps follow before the knowledge
+          check — you'll upload your CV and written work at the end.
         </p>
 
         <div class="alert alert-danger d-none" id="form-alert"></div>
@@ -229,7 +233,221 @@
     </div>
   </section>
 
-  <!-- ============ STEP 2: QUIZ INTRO ============ -->
+  <!-- ============ STEP 2: ELIGIBILITY ============ -->
+  <section id="screen-eligibility" class="screen d-none">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="mb-1">Practical eligibility</h4>
+        <p class="text-muted small mb-4">
+          Four quick questions so we don't waste your time on an application we
+          couldn't honour. Answered honestly.
+        </p>
+
+        <div class="alert alert-danger d-none" id="elig-alert"></div>
+
+        <form id="eligibility-form" novalidate>
+          <div class="mb-4">
+            <p class="form-label fw-semibold mb-2">Can you attend all four days of the course?</p>
+            <div class="quiz-option-group" data-group="elig_attend">
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, all four days">Yes, all four days</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Only part of the period">Only part of the period</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No">No</button>
+            </div>
+            <div class="field-error" data-error="elig_attend"></div>
+          </div>
+
+          <div class="mb-4">
+            <p class="form-label fw-semibold mb-2">Will you have a laptop for the course?</p>
+            <div class="quiz-option-group" data-group="elig_laptop">
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes">Yes</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No">No</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="I am not sure">I am not sure</button>
+            </div>
+            <div class="field-error" data-error="elig_laptop"></div>
+          </div>
+
+          <div class="mb-4">
+            <p class="form-label fw-semibold mb-2">Do you work with spatial data?</p>
+            <div class="quiz-option-group" data-group="elig_data">
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, I work with it now">Yes, I work with it now</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Not yet, but I expect to within six months">Not yet, but I expect to within six months</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No">No</button>
+            </div>
+            <div class="field-error" data-error="elig_data"></div>
+          </div>
+
+          <div class="mb-4">
+            <p class="form-label fw-semibold mb-2">How will your travel and accommodation be funded?</p>
+            <div class="quiz-option-group" data-group="elig_funding">
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="My institution has agreed to cover it">My institution has agreed to cover it</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="I will cover it myself">I will cover it myself</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Likely covered, but not yet confirmed">Likely covered, but not yet confirmed</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="I could not attend without financial support">I could not attend without financial support</button>
+            </div>
+            <div class="field-error" data-error="elig_funding"></div>
+          </div>
+
+          <div class="d-grid mt-4">
+            <button class="btn btn-primary btn-lg" type="submit" id="submit-eligibility">
+              Continue <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ INELIGIBLE (terminal, revisable) ============ -->
+  <section id="screen-ineligible" class="screen d-none">
+    <div class="text-center">
+      <span class="auth-head-icon muted"><i class="bi bi-info-circle-fill"></i></span>
+    </div>
+    <div class="card">
+      <div class="card-body text-center">
+        <h3 class="mt-1">Thank you for your interest</h3>
+        <p class="text-muted mb-4" id="ineligible-reason"></p>
+        <button type="button" class="btn btn-outline-secondary" id="change-eligibility">
+          Change my answers
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 3: EXPERIENCE ============ -->
+  <section id="screen-experience" class="screen d-none">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="mb-1">Your experience</h4>
+        <p class="text-muted small mb-4">
+          Eight quick questions about R, Bayesian methods, and how you plan to
+          use what you learn. All required.
+        </p>
+
+        <div class="alert alert-danger d-none" id="exp-alert"></div>
+
+        <form id="experience-form" novalidate>
+          <div class="mb-4">
+            <p class="form-label fw-semibold mb-2">How often do you use R?</p>
+            <div class="quiz-option-group" data-group="exp_rfreq">
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Most weeks">Most weeks</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Most months">Most months</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="A few times a year">A few times a year</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Rarely or never">Rarely or never</button>
+            </div>
+            <div class="field-error" data-error="exp_rfreq"></div>
+          </div>
+
+          <div class="mb-4">
+            <p class="form-label fw-semibold mb-2">How would you rate your R skills?</p>
+            <div class="quiz-option-group" data-group="exp_rself">
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Beginner — I can run scripts others have written">Beginner — I can run scripts others have written</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Intermediate — I write my own analysis scripts">Intermediate — I write my own analysis scripts</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Advanced — I write functions and packages">Advanced — I write functions and packages</button>
+            </div>
+            <div class="field-error" data-error="exp_rself"></div>
+          </div>
+
+          <div class="mb-4">
+            <p class="form-label fw-semibold mb-2">Your experience with Bayesian methods?</p>
+            <div class="quiz-option-group" data-group="exp_bayes">
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="None">None</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Beginner">Beginner</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Intermediate">Intermediate</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Advanced">Advanced</button>
+            </div>
+            <div class="field-error" data-error="exp_bayes"></div>
+          </div>
+
+          <div class="mb-4">
+            <p class="form-label fw-semibold mb-2">Have you fitted a generalised linear model (GLM) in R?</p>
+            <div class="quiz-option-group" data-group="exp_glm">
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, several times">Yes, several times</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, once or twice">Yes, once or twice</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No">No</button>
+            </div>
+            <div class="field-error" data-error="exp_glm"></div>
+          </div>
+
+          <div class="mb-4">
+            <p class="form-label fw-semibold mb-2">What kind of spatial data do you typically work with?</p>
+            <div class="quiz-option-group" data-group="exp_dtype">
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Survey or sampling points with coordinates">Survey or sampling points with coordinates</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Counts or rates aggregated to districts, wards or facilities">Counts or rates aggregated to districts, wards or facilities</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Raster or gridded environmental data">Raster or gridded environmental data</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Locations of events or cases (point patterns)">Locations of events or cases (point patterns)</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="A mixture of these">A mixture of these</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="None yet">None yet</button>
+            </div>
+            <div class="field-error" data-error="exp_dtype"></div>
+          </div>
+
+          <div class="mb-4">
+            <p class="form-label fw-semibold mb-2">When do you next plan to use these methods?</p>
+            <div class="quiz-option-group" data-group="exp_when">
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="I have an analysis waiting for these methods now">I have an analysis waiting for these methods now</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Within six months">Within six months</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Within a year">Within a year</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No specific plan yet">No specific plan yet</button>
+            </div>
+            <div class="field-error" data-error="exp_when"></div>
+          </div>
+
+          <div class="mb-4">
+            <p class="form-label fw-semibold mb-2">Will you share what you learn with a wider team?</p>
+            <div class="quiz-option-group" data-group="exp_share">
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, and I have a specific team in mind">Yes, and I have a specific team in mind</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, in principle">Yes, in principle</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Possibly">Possibly</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No">No</button>
+            </div>
+            <div class="field-error" data-error="exp_share"></div>
+          </div>
+
+          <div class="mb-4">
+            <p class="form-label fw-semibold mb-2">Do you use spatial / statistical methods in your current work?</p>
+            <div class="quiz-option-group" data-group="exp_use">
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Yes, regularly">Yes, regularly</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="Sometimes">Sometimes</button>
+              <button type="button" class="btn btn-outline-secondary quiz-option" data-value="No">No</button>
+            </div>
+            <div class="field-error" data-error="exp_use"></div>
+          </div>
+
+          <div class="d-grid mt-4">
+            <button class="btn btn-primary btn-lg" type="submit" id="submit-experience">
+              Continue <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 4: HONESTY CHECK (claims) ============ -->
+  <section id="screen-claims" class="screen d-none">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="mb-1">Honesty check</h4>
+        <p class="text-muted small mb-4">
+          For each R function below, tell us honestly whether you've used it,
+          only heard of it, or aren't familiar with it. "Not familiar" is a
+          perfectly good answer.
+        </p>
+
+        <div class="alert alert-danger d-none" id="claims-alert"></div>
+
+        <div id="claims-list"></div>
+
+        <div class="d-grid mt-4">
+          <button class="btn btn-primary btn-lg" type="button" id="submit-claims">
+            Continue to the quiz <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 5: QUIZ INTRO ============ -->
   <section id="screen-intro" class="screen d-none">
     <div class="text-center">
       <span class="auth-head-icon"><i class="bi bi-clock-history"></i></span>
@@ -294,13 +512,14 @@
     </div>
   </section>
 
-  <!-- ============ STEP 5: FINAL SUBMISSION (only reached if passed) ============ -->
+  <!-- ============ STEP 6: FINAL SUBMISSION (only reached if passed) ============ -->
   <section id="screen-final" class="screen d-none">
     <div class="card">
       <div class="card-body">
         <h4 class="mb-1">Final step</h4>
         <p class="text-muted small mb-4">
-          Tell us why you're applying and upload your CV to complete your application.
+          Three short prompts about your work, plus your CV. The panel judges
+          quality, so short and honest is fine.
         </p>
 
         <div class="alert alert-danger d-none" id="final-alert"></div>
@@ -308,16 +527,28 @@
         <form id="final-form" novalidate>
           <div class="row g-3">
             <div class="col-12">
-              <label class="form-label">Motivation <span class="text-muted">(300 words max)</span></label>
-              <textarea class="form-control form-control-air" name="motivation" rows="4" required
-                        placeholder="Why do you want to join the program?"></textarea>
-              <div class="field-error" data-error="motivation"></div>
+              <label class="form-label">A dataset you have analysed <span class="text-muted">(a sentence or two)</span></label>
+              <textarea class="form-control form-control-air" name="written_dataset" rows="3" required
+                        placeholder="What was it, and what did you do with it?"></textarea>
+              <div class="field-error" data-error="written_dataset"></div>
             </div>
             <div class="col-12">
-              <label class="form-label">Expectations <span class="text-muted">(300 words max)</span></label>
-              <textarea class="form-control form-control-air" name="expectations" rows="4" required
-                        placeholder="What do you hope to gain from this program?"></textarea>
-              <div class="field-error" data-error="expectations"></div>
+              <label class="form-label">Some of your own R code <span class="text-muted">(5–15 lines)</span></label>
+              <textarea class="form-control form-control-air font-monospace" name="written_code" rows="8" required
+                        placeholder="Paste a snippet you actually wrote."></textarea>
+              <div class="field-error" data-error="written_code"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Why would OLS be a poor choice for spatial data? <span class="text-muted">(a sentence is fine)</span></label>
+              <textarea class="form-control form-control-air" name="written_why_not_ols" rows="3" required
+                        placeholder="One thought, briefly."></textarea>
+              <div class="field-error" data-error="written_why_not_ols"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Anything else for the panel? <span class="text-muted">(optional)</span></label>
+              <textarea class="form-control form-control-air" name="written_other" rows="3"
+                        placeholder="Context you'd like reviewers to see."></textarea>
+              <div class="field-error" data-error="written_other"></div>
             </div>
             <div class="col-12">
               <label class="form-label">CV upload <span class="text-muted">(PDF only, 2 pages max)</span></label>

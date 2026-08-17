@@ -355,6 +355,36 @@ input[type="file"].form-control::-webkit-file-upload-button {
   box-shadow: 0 0 0 4px rgba(207, 165, 74, 0.15);
 }
 
+/* Option groups for eligibility / experience / honesty screens — stack the
+   options vertically so multi-line answers stay readable */
+.quiz-option-group {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.quiz-option-group .quiz-option { width: 100%; }
+
+/* Honesty screen — the R function name shown above its choice buttons */
+.claim-row {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 1rem;
+}
+.claim-row:first-child { border-top: 0; padding-top: 0; }
+.claim-name {
+  background: var(--brand-tint);
+  color: var(--brand-dark);
+  padding: .25rem .55rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+}
+/* Horizontal 3-button row on the honesty screen — override the vertical stack */
+.claim-row .quiz-option-group {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.claim-row .quiz-option-group .quiz-option { width: auto; flex: 1 1 auto; }
+
 /* -------------------------------------------------------------- Alerts */
 .alert {
   border: 0;

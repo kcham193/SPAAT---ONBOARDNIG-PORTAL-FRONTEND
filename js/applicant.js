@@ -1,7 +1,13 @@
-// Applicant journey state machine (see backend README_FRONTEND section 2).
-// Two-stage flow: Details -> Quiz -> Result -> (if passed) Finalize.
-// Persisted state lets us resume across reloads / tab close, but we always
-// re-validate with /status/ before trusting stored ids.
+// Applicant journey state machine (see backend README_FRONTEND).
+// Six visible steps + prep splash + terminal Ineligible / Done screens.
+//   1. Details       (POST /applications/)
+//   2. Eligibility   (POST /applications/{id}/eligibility/) — server may reject
+//   3. Experience    (POST /applications/{id}/experience/)
+//   4. Honesty       (GET  /applications/{id}/claims/    → shuffled function list
+//                     POST /applications/{id}/claims/    with answers)
+//   5. Quiz          (POST /applications/{id}/quiz/start/, POST /quiz/{s}/answer/)
+//   6. Submit        (POST /applications/{id}/finalize/) — written prompts + CV
+// Boot re-validates with /status/ so stale ids don't strand the user.
 const LS = {
   get appId()  { return localStorage.getItem("application_id"); },
   set appId(v) { v ? localStorage.setItem("application_id", v) : localStorage.removeItem("application_id"); },
@@ -11,8 +17,7 @@ const LS = {
 
 // ---------------------------------------------------------------- Country list
 // Populates the Nationality and Country-of-residence <select>s. Sent as plain
-// text to the backend, which stores whichever label was chosen — no enum on
-// that end, so this list is safe to extend or reorder without a schema change.
+// text to the backend, which stores whichever label was chosen.
 const COUNTRIES = [
   "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda",
   "Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain",
@@ -54,28 +59,46 @@ const COUNTRIES = [
   selects.forEach((sel) => sel.insertAdjacentHTML("beforeend", optionsHtml));
 })();
 
+// ---------------------------------------------------------------- Screens + stepper
 const screens = {
-  prep:     document.getElementById("screen-prep"),
-  form:     document.getElementById("screen-form"),
-  intro:    document.getElementById("screen-intro"),
-  question: document.getElementById("screen-question"),
-  result:   document.getElementById("screen-result"),
-  final:    document.getElementById("screen-final"),
-  done:     document.getElementById("screen-done"),
+  prep:        document.getElementById("screen-prep"),
+  form:        document.getElementById("screen-form"),
+  eligibility: document.getElementById("screen-eligibility"),
+  ineligible:  document.getElementById("screen-ineligible"),
+  experience:  document.getElementById("screen-experience"),
+  claims:      document.getElementById("screen-claims"),
+  intro:       document.getElementById("screen-intro"),
+  question:    document.getElementById("screen-question"),
+  result:      document.getElementById("screen-result"),
+  final:       document.getElementById("screen-final"),
+  done:        document.getElementById("screen-done"),
 };
 
-// Stepper progression. "done" leaves the stepper lit on "final" — same step,
-// task complete.
-const STEP_ORDER = ["form", "intro", "question", "result", "final"];
+// Pill row on the stepper (6 items).
+const STEP_ORDER = ["form", "eligibility", "experience", "claims", "quiz", "submit"];
+
+// Screens with no pill are prep and ineligible (both terminal-ish).
+const SCREEN_TO_STEP = {
+  form: "form",
+  eligibility: "eligibility",
+  experience: "experience",
+  claims: "claims",
+  intro: "quiz",
+  question: "quiz",
+  result: "quiz",
+  final: "submit",
+  done: "submit",
+};
 
 function showScreen(name) {
   Object.entries(screens).forEach(([k, el]) => el.classList.toggle("d-none", k !== name));
-  const active = name === "done" ? "final" : name;
-  const currentIdx = STEP_ORDER.indexOf(active);
+  const active = SCREEN_TO_STEP[name];
+  const currentIdx = active ? STEP_ORDER.indexOf(active) : -1;
+  const allDone = name === "done";
   document.querySelectorAll("#steps [data-step]").forEach((b) => {
     const idx = STEP_ORDER.indexOf(b.dataset.step);
-    b.classList.toggle("active", idx === currentIdx);
-    b.classList.toggle("done", idx >= 0 && (idx < currentIdx || name === "done"));
+    b.classList.toggle("active", idx === currentIdx && !allDone);
+    b.classList.toggle("done", idx >= 0 && (idx < currentIdx || allDone));
   });
 }
 
@@ -83,15 +106,17 @@ function showScreen(name) {
 const form = document.getElementById("application-form");
 const formAlert = document.getElementById("form-alert");
 const finalAlert = document.getElementById("final-alert");
+const eligAlert = document.getElementById("elig-alert");
+const expAlert = document.getElementById("exp-alert");
+const claimsAlert = document.getElementById("claims-alert");
+const introAlert = document.getElementById("intro-alert");
 
 function clearFieldErrors() {
   document.querySelectorAll("[data-error]").forEach((el) => (el.textContent = ""));
-  formAlert.classList.add("d-none");
-  finalAlert.classList.add("d-none");
+  [formAlert, finalAlert, eligAlert, expAlert, claimsAlert].forEach((a) => a && a.classList.add("d-none"));
 }
 
 function renderFieldErrors(data, alertBox) {
-  // data is a { field: [messages] } map (or {detail: "..."}).
   const box = alertBox || formAlert;
   const fail = (text) => { box.textContent = text; box.classList.remove("d-none"); };
   if (data && typeof data === "object" && !Array.isArray(data)) {
@@ -108,10 +133,7 @@ function renderFieldErrors(data, alertBox) {
   }
 }
 
-// ---------------------------------------------------------------- Step 0: prep
-// Preparation splash — reminds the applicant to have CV / motivation /
-// expectations ready before the flow starts. Shown once for fresh visitors;
-// returning users with saved state resume past this screen automatically.
+// ---------------------------------------------------------------- Prep splash
 const beginBtn = document.getElementById("begin-application");
 if (beginBtn) {
   beginBtn.addEventListener("click", () => {
@@ -121,8 +143,6 @@ if (beginBtn) {
 }
 
 // ---------------------------------------------------------------- Step 1: details
-// The server accepts JSON here (no file upload in step 1), so we send JSON —
-// smaller and easier to debug.
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   clearFieldErrors();
@@ -134,7 +154,7 @@ form.addEventListener("submit", async (e) => {
     const app = await apiJson("POST", "/applications/", payload);
     LS.appId = app.id;
     LS.sessId = null;
-    showScreen("intro");
+    showScreen("eligibility");
   } catch (err) {
     renderFieldErrors(err.data, formAlert);
   } finally {
@@ -143,8 +163,123 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
-// ---------------------------------------------------------------- Step 2: start
-const introAlert = document.getElementById("intro-alert");
+// ---------------------------------------------------------------- Option groups
+// Multi-choice pill buttons used by eligibility, experience and claims.
+// Each .quiz-option-group carries the field name in data-group; each option
+// carries the string value in data-value. Clicking marks the group's value.
+function initOptionGroups(scope) {
+  scope.querySelectorAll(".quiz-option-group").forEach((group) => {
+    group.querySelectorAll(".quiz-option").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        group.querySelectorAll(".quiz-option").forEach((o) => o.classList.remove("active"));
+        btn.classList.add("active");
+        group.dataset.value = btn.dataset.value;
+      });
+    });
+  });
+}
+function collectGroupValues(scope) {
+  const out = {};
+  scope.querySelectorAll(".quiz-option-group").forEach((g) => {
+    if (g.dataset.value) out[g.dataset.group] = g.dataset.value;
+  });
+  return out;
+}
+
+initOptionGroups(document.getElementById("eligibility-form"));
+initOptionGroups(document.getElementById("experience-form"));
+
+// ---------------------------------------------------------------- Step 2: eligibility
+document.getElementById("eligibility-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearFieldErrors();
+  const btn = document.getElementById("submit-eligibility");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Saving…`;
+  try {
+    const payload = collectGroupValues(document.getElementById("eligibility-form"));
+    const res = await apiJson("POST", `/applications/${LS.appId}/eligibility/`, payload);
+    if (res && res.eligible === false) { showIneligible(res.reason); return; }
+    showScreen("experience");
+  } catch (err) {
+    renderFieldErrors(err.data, eligAlert);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `Continue <i class="bi bi-arrow-right ms-1"></i>`;
+  }
+});
+
+function showIneligible(reason) {
+  document.getElementById("ineligible-reason").textContent = reason || "";
+  showScreen("ineligible");
+}
+
+document.getElementById("change-eligibility").addEventListener("click", () => {
+  clearFieldErrors();
+  showScreen("eligibility");
+});
+
+// ---------------------------------------------------------------- Step 3: experience
+document.getElementById("experience-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearFieldErrors();
+  const btn = document.getElementById("submit-experience");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Saving…`;
+  try {
+    const payload = collectGroupValues(document.getElementById("experience-form"));
+    await apiJson("POST", `/applications/${LS.appId}/experience/`, payload);
+    showScreen("claims");
+    loadClaims();
+  } catch (err) {
+    renderFieldErrors(err.data, expAlert);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `Continue <i class="bi bi-arrow-right ms-1"></i>`;
+  }
+});
+
+// ---------------------------------------------------------------- Step 4: honesty
+async function loadClaims() {
+  const list = document.getElementById("claims-list");
+  list.innerHTML = `<p class="text-muted text-center my-4">Loading…</p>`;
+  try {
+    const res = await apiJson("GET", `/applications/${LS.appId}/claims/`);
+    list.innerHTML = res.functions.map((name) => `
+      <div class="claim-row mb-3">
+        <p class="mb-2"><code class="claim-name">${name}</code></p>
+        <div class="quiz-option-group" data-group="${name}">
+          <button type="button" class="btn btn-outline-secondary quiz-option" data-value="used">Used</button>
+          <button type="button" class="btn btn-outline-secondary quiz-option" data-value="heard">Heard of</button>
+          <button type="button" class="btn btn-outline-secondary quiz-option" data-value="no">Not familiar</button>
+        </div>
+      </div>
+    `).join("");
+    initOptionGroups(list);
+  } catch (err) {
+    list.innerHTML = `<p class="text-danger text-center my-4">Could not load the questions. Please refresh.</p>`;
+  }
+}
+
+document.getElementById("submit-claims").addEventListener("click", async () => {
+  clearFieldErrors();
+  const list = document.getElementById("claims-list");
+  const claims = collectGroupValues(list);
+  const btn = document.getElementById("submit-claims");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Saving…`;
+  try {
+    await apiJson("POST", `/applications/${LS.appId}/claims/`, { claims });
+    showScreen("intro");
+  } catch (err) {
+    renderFieldErrors(err.data, claimsAlert);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `Continue to the quiz <i class="bi bi-arrow-right ms-1"></i>`;
+  }
+});
+
+// ---------------------------------------------------------------- Step 5: quiz start
 document.getElementById("start-quiz").addEventListener("click", async (e) => {
   const btn = e.currentTarget;
   btn.disabled = true;
@@ -155,11 +290,14 @@ document.getElementById("start-quiz").addEventListener("click", async (e) => {
     renderQuestion(q);
   } catch (err) {
     if (err.status === 404) {
-      // Stored application no longer exists — send the applicant back to Step 1.
       resetJourney();
-      showScreen("form");
-      formAlert.textContent = "We couldn't find your application. Please fill in your details again.";
-      formAlert.classList.remove("d-none");
+      showScreen("prep");
+      return;
+    }
+    if (err.status === 403) {
+      // Ineligible — surface the reason the server stored so the user knows why.
+      const msg = err.data && (err.data.detail || err.data.reason || "");
+      showIneligible(msg || "This application is not eligible to take the quiz.");
       return;
     }
     const msg = err.data && (err.data.detail || JSON.stringify(err.data));
@@ -170,7 +308,7 @@ document.getElementById("start-quiz").addEventListener("click", async (e) => {
   }
 });
 
-// -------------------------------------------------------- Step 3: question loop
+// -------------------------------------------------------- Step 5b: question loop
 let countdownTimer = null;
 let selectedAnswer = null;
 let currentDeadline = null;
@@ -190,8 +328,6 @@ function stopCountdown() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
 }
 
-// Server-authoritative countdown: we tick against the ISO `deadline`, not a
-// local timer we started -- the two would drift.
 function startCountdown(deadlineIso) {
   stopCountdown();
   currentDeadline = new Date(deadlineIso).getTime();
@@ -202,7 +338,7 @@ function startCountdown(deadlineIso) {
     if (remaining <= 0) {
       stopCountdown();
       els.status.textContent = "Time's up — submitting…";
-      submitAnswer(true); // auto-submit; server will mark it timed_out
+      submitAnswer(true);
     }
   };
   tick();
@@ -248,7 +384,6 @@ async function submitAnswer(auto) {
   submitting = true;
   stopCountdown();
   els.submit.disabled = true;
-
   const answer = selectedAnswer || "";
   try {
     const res = await apiJson("POST", `/quiz/${LS.sessId}/answer/`, { answer });
@@ -265,7 +400,7 @@ async function submitAnswer(auto) {
   }
 }
 
-// ---------------------------------------------------------------- Step 4: result
+// ---------------------------------------------------------------- Step 5c: result
 function showResult(result) {
   stopCountdown();
   showScreen("result");
@@ -288,7 +423,7 @@ function showResult(result) {
     icon.className = "bi bi-patch-check-fill";
     iconWrap.className = "auth-head-icon success";
     message.textContent =
-      "You've met the required score. One last step: your motivation, expectations and CV.";
+      "You've met the required score. One last step: a few written prompts and your CV.";
   } else {
     icon.className = "bi bi-info-circle-fill";
     iconWrap.className = "auth-head-icon muted";
@@ -301,9 +436,8 @@ function showResult(result) {
     ? `Completed ${new Date(result.completed_at).toLocaleString()}`
     : "";
 
-  // Keep resume state while the final step is still open so a reload lands the
-  // applicant back on this screen or the final form. Otherwise the journey is
-  // done — clear it so a fresh visit starts at Step 1.
+  // Keep resume state while the final step is still open. Otherwise the
+  // journey is done — clear it so a fresh visit starts at prep.
   if (unlocked) {
     if (result.application) LS.appId = result.application;
     if (result.id) LS.sessId = result.id;
@@ -313,7 +447,7 @@ function showResult(result) {
   }
 }
 
-// ------------------------------------------------- Step 5: final submission
+// ------------------------------------------------- Step 6: final submission
 document.getElementById("go-final").addEventListener("click", () => {
   clearFieldErrors();
   showScreen("final");
@@ -328,9 +462,10 @@ finalForm.addEventListener("submit", async (e) => {
   btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Submitting…`;
   try {
     await apiForm("POST", `/applications/${LS.appId}/finalize/`, new FormData(finalForm));
+    // Keep LS.appId so a reload after this hits /status/ and lands on Done
+    // again — clearing it here would strand a returning applicant on the prep
+    // splash and let them start a duplicate application.
     showScreen("done");
-    LS.appId = null;
-    LS.sessId = null;
   } catch (err) {
     renderFieldErrors(err.data, finalAlert);
   } finally {
@@ -346,13 +481,10 @@ function resetJourney() {
 }
 
 (async function boot() {
-  // Fresh visit → show the preparation splash so applicants know what to
-  // have ready before the details form.
   if (!LS.appId) { resetJourney(); showScreen("prep"); return; }
 
-  // Always re-validate with the server before resuming — the stored application
-  // may have been deleted, and we don't want to leave the user stuck on a
-  // journey the backend no longer knows about.
+  // Always re-validate with /status/ before trusting the stored id — the
+  // record may have been deleted, or the backend may have new flags.
   let state;
   try {
     state = await apiJson("GET", `/applications/${LS.appId}/status/`);
@@ -362,20 +494,35 @@ function resetJourney() {
     return;
   }
 
-  if (state.final_submitted) { resetJourney(); showScreen("done"); return; }
+  // Already submitted — keep the id so subsequent reloads still land on Done
+  // rather than a fresh prep splash inviting a duplicate application.
+  if (state.final_submitted) { showScreen("done"); return; }
 
+  // Ineligible — keep the appId so the user can revise their answers via the
+  // "Change my answers" button on the ineligible screen.
+  if (state.ineligible_reason) {
+    showIneligible(state.ineligible_reason);
+    return;
+  }
+
+  // Quiz already started?
   if (state.quiz) {
     LS.sessId = state.quiz.id;
     if (state.quiz.completed_at) { showResult(state.quiz); return; }
-    // Mid-quiz: /current/ returns either a question payload or the result.
     try {
       const data = await apiJson("GET", `/quiz/${LS.sessId}/current/`);
       if (data.question) { renderQuestion(data); return; }
       if (typeof data.score === "number") { showResult(data); return; }
     } catch (err) {
-      LS.sessId = null; // fall through to the intro screen
+      LS.sessId = null;
     }
   }
+
+  // Pre-quiz — resume at the earliest incomplete step.
+  const done = state.completed || {};
+  if (!done.eligibility) { showScreen("eligibility"); return; }
+  if (!done.experience)  { showScreen("experience"); return; }
+  if (!done.claims)      { showScreen("claims"); loadClaims(); return; }
 
   showScreen("intro");
 })();
