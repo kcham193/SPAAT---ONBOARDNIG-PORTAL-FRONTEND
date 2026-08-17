@@ -59,8 +59,12 @@
       <span class="step-circle">5</span>
       <span class="step-label">Quiz</span>
     </li>
-    <li class="step" data-step="submit">
+    <li class="step" data-step="docs">
       <span class="step-circle">6</span>
+      <span class="step-label">Documents</span>
+    </li>
+    <li class="step" data-step="submit">
+      <span class="step-circle">7</span>
       <span class="step-label">Submit</span>
     </li>
   </ul>
@@ -89,15 +93,15 @@
       <div class="col-md-4">
         <div class="feature-card h-100">
           <div class="feature-icon"><i class="bi bi-chat-square-quote-fill"></i></div>
-          <h5>Motivation</h5>
-          <p class="text-muted small mb-0">Why you're applying — <strong>300 words max</strong>.</p>
+          <h5>Motivation &amp; expectations</h5>
+          <p class="text-muted small mb-0">Why you're applying + what you hope to gain — <strong>300 words each</strong>.</p>
         </div>
       </div>
       <div class="col-md-4">
         <div class="feature-card h-100">
-          <div class="feature-icon"><i class="bi bi-bullseye"></i></div>
-          <h5>Expectations</h5>
-          <p class="text-muted small mb-0">What you hope to gain — <strong>300 words max</strong>.</p>
+          <div class="feature-icon"><i class="bi bi-code-slash"></i></div>
+          <h5>Written prompts</h5>
+          <p class="text-muted small mb-0">A dataset you've analysed, 5–15 lines of your own R code, and a sentence on OLS for spatial data.</p>
         </div>
       </div>
     </div>
@@ -513,19 +517,20 @@
     </div>
   </section>
 
-  <!-- ============ STEP 6: FINAL SUBMISSION (only reached if passed) ============ -->
-  <section id="screen-final" class="screen d-none">
+  <!-- ============ STEP 6: DOCUMENTS (motivation + expectations + CV) ============ -->
+  <section id="screen-docs" class="screen d-none">
     <div class="card">
       <div class="card-body">
-        <h4 class="mb-1">Final step</h4>
+        <h4 class="mb-1">Motivation, expectations and CV</h4>
         <p class="text-muted small mb-4">
-          Tell us why you're applying, what you hope to gain, and upload your
-          CV to complete your application.
+          Tell us why you're applying, what you hope to gain, and upload
+          your CV. On the next screen you'll answer a few short written
+          prompts before submitting.
         </p>
 
-        <div class="alert alert-danger d-none" id="final-alert"></div>
+        <div class="alert alert-danger d-none" id="docs-alert"></div>
 
-        <form id="final-form" novalidate>
+        <form id="docs-form" novalidate>
           <div class="row g-3">
             <div class="col-12">
               <label class="form-label">Motivation <span class="text-muted">(300 words max)</span></label>
@@ -543,6 +548,56 @@
               <label class="form-label">CV upload <span class="text-muted">(PDF only, 2 pages max)</span></label>
               <input type="file" class="form-control" name="cv" accept="application/pdf,.pdf" required>
               <div class="field-error" data-error="cv"></div>
+            </div>
+          </div>
+
+          <div class="d-grid mt-4">
+            <button class="btn btn-primary btn-lg" type="submit" id="submit-docs">
+              Continue <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 7: SUBMIT (written prompts + finalize) ============ -->
+  <section id="screen-final" class="screen d-none">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="mb-1">A few short written prompts</h4>
+        <p class="text-muted small mb-4">
+          Answer these briefly, then submit your application. Panel judges
+          quality — short and honest is fine.
+        </p>
+
+        <div class="alert alert-danger d-none" id="final-alert"></div>
+
+        <form id="final-form" novalidate>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">A dataset you have analysed <span class="text-muted">(a sentence or two)</span></label>
+              <textarea class="form-control form-control-air" name="written_dataset" rows="3" required
+                        placeholder="What was it, and what did you do with it?"></textarea>
+              <div class="field-error" data-error="written_dataset"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Some of your own R code <span class="text-muted">(5–15 lines)</span></label>
+              <textarea class="form-control form-control-air font-monospace" name="written_code" rows="8" required
+                        placeholder="Paste a snippet you actually wrote."></textarea>
+              <div class="field-error" data-error="written_code"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Why would OLS be a poor choice for spatial data? <span class="text-muted">(a sentence is fine)</span></label>
+              <textarea class="form-control form-control-air" name="written_why_not_ols" rows="3" required
+                        placeholder="One thought, briefly."></textarea>
+              <div class="field-error" data-error="written_why_not_ols"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Anything else for the panel? <span class="text-muted">(optional)</span></label>
+              <textarea class="form-control form-control-air" name="written_other" rows="3"
+                        placeholder="Context you'd like reviewers to see."></textarea>
+              <div class="field-error" data-error="written_other"></div>
             </div>
           </div>
 

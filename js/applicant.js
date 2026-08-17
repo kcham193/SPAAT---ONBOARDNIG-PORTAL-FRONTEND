@@ -70,12 +70,13 @@ const screens = {
   intro:       document.getElementById("screen-intro"),
   question:    document.getElementById("screen-question"),
   result:      document.getElementById("screen-result"),
+  docs:        document.getElementById("screen-docs"),
   final:       document.getElementById("screen-final"),
   done:        document.getElementById("screen-done"),
 };
 
-// Pill row on the stepper (6 items).
-const STEP_ORDER = ["form", "eligibility", "experience", "claims", "quiz", "submit"];
+// Pill row on the stepper (7 items).
+const STEP_ORDER = ["form", "eligibility", "experience", "claims", "quiz", "docs", "submit"];
 
 // Screens with no pill are prep and ineligible (both terminal-ish).
 const SCREEN_TO_STEP = {
@@ -86,6 +87,7 @@ const SCREEN_TO_STEP = {
   intro: "quiz",
   question: "quiz",
   result: "quiz",
+  docs: "docs",
   final: "submit",
   done: "submit",
 };
@@ -109,11 +111,12 @@ const finalAlert = document.getElementById("final-alert");
 const eligAlert = document.getElementById("elig-alert");
 const expAlert = document.getElementById("exp-alert");
 const claimsAlert = document.getElementById("claims-alert");
+const docsAlert = document.getElementById("docs-alert");
 const introAlert = document.getElementById("intro-alert");
 
 function clearFieldErrors() {
   document.querySelectorAll("[data-error]").forEach((el) => (el.textContent = ""));
-  [formAlert, finalAlert, eligAlert, expAlert, claimsAlert].forEach((a) => a && a.classList.add("d-none"));
+  [formAlert, finalAlert, eligAlert, expAlert, claimsAlert, docsAlert].forEach((a) => a && a.classList.add("d-none"));
 }
 
 function renderFieldErrors(err, alertBox) {
@@ -478,12 +481,41 @@ function showResult(result) {
   }
 }
 
-// ------------------------------------------------- Step 6: final submission
+// ------------------------------------------------- Step 6: documents (motivation, expectations, CV)
+// Result screen "Continue to final step" button now routes to the docs screen
+// (motivation + expectations + CV) rather than straight to the written-prompts
+// form.
 document.getElementById("go-final").addEventListener("click", () => {
   clearFieldErrors();
+  showScreen("docs");
+});
+
+const docsForm = document.getElementById("docs-form");
+docsForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  clearFieldErrors();
+  // Client-side check that every required docs field is filled. We DON'T POST
+  // here — the values are held on the form elements and combined with the
+  // written prompts on Step 7 submit, so the whole finalize hits the backend
+  // in a single request.
+  const fd = new FormData(docsForm);
+  const missing = [];
+  ["motivation", "expectations"].forEach((k) => {
+    if (!String(fd.get(k) || "").trim()) missing.push(k);
+  });
+  const cv = fd.get("cv");
+  if (!cv || (cv instanceof File && cv.size === 0)) missing.push("cv");
+  if (missing.length) {
+    missing.forEach((k) => {
+      const target = document.querySelector(`#docs-form [data-error="${k}"]`);
+      if (target) target.textContent = "This field is required.";
+    });
+    return;
+  }
   showScreen("final");
 });
 
+// ------------------------------------------------- Step 7: submit (written prompts + finalize)
 const finalForm = document.getElementById("final-form");
 finalForm.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -492,7 +524,11 @@ finalForm.addEventListener("submit", async (e) => {
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Submitting…`;
   try {
-    await apiForm("POST", `/applications/${LS.appId}/finalize/`, new FormData(finalForm));
+    // Combine Step 6 (docs) + Step 7 (written) into one multipart request.
+    const combined = new FormData();
+    for (const [k, v] of new FormData(docsForm)) combined.append(k, v);
+    for (const [k, v] of new FormData(finalForm)) combined.append(k, v);
+    await apiForm("POST", `/applications/${LS.appId}/finalize/`, combined);
     // Keep LS.appId so a reload after this hits /status/ and lands on Done
     // again — clearing it here would strand a returning applicant on the prep
     // splash and let them start a duplicate application.
