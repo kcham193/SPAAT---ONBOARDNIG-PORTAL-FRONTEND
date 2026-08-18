@@ -21,7 +21,7 @@
   <a class="muted" href="panel.html">Staff panel</a>
 </header>
 
-<div class="wrap">
+<div class="wrap-wide">
   <ul class="steps" id="steps"></ul>
 
   <div class="card">
@@ -109,6 +109,8 @@
         <option value="">Choose…</option>
         <option>BSc</option><option>MSc</option><option>PhD</option><option>Other</option>
       </select>
+      <input type="text" name="education_other" class="hidden" maxlength="30"
+             placeholder="Please specify" data-other-for="education">
       <div class="field-error" data-error="education"></div>
     </div>
     <div>
@@ -123,6 +125,8 @@
         <option>University</option><option>NGO</option><option>Government</option>
         <option>Private sector</option><option>Other</option>
       </select>
+      <input type="text" name="institution_type_other" class="hidden" maxlength="50"
+             placeholder="Please specify" data-other-for="institution_type">
       <div class="field-error" data-error="institution_type"></div>
     </div>
     <div>

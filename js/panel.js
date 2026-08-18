@@ -61,28 +61,88 @@ loginForm.addEventListener("submit", async (e) => {
   }
 });
 
-// Viewers get a read-only panel. The server enforces the same rules, so this is
-// purely about not showing buttons that would come back 403.
+// Viewers get a read-only panel, and only superusers see the exports and the
+// shortlist. The server enforces all of it, so this is purely about not showing
+// buttons that would come back 403.
 let CAN_REVIEW = true;
+let CAN_SHORTLIST = true;
 
 function setNavUser(user) {
   const role = user.is_superuser ? " · superuser" : user.role === "viewer" ? " · view only" : "";
   el("nav-username").textContent = user.username + role;
   CAN_REVIEW = user.can_review !== false;
+  CAN_SHORTLIST = user.can_shortlist !== false;
   hide(el("viewer-badge"), CAN_REVIEW);
   hide(el("export-csv"), user.can_export === false);
-  // Viewers can build a shortlist -- it computes a ranking, it records nothing --
-  // but the CSV of it is a bulk export, so it follows the same rule as the other.
+  // Both are superuser-only: a CSV takes the whole applicant table out of the
+  // panel, and the shortlist is the selection rather than a view of it.
+  hide(el("go-shortlist"), !CAN_SHORTLIST);
   hide(el("sl-csv"), user.can_export === false);
   hide(el("sl-csv-short"), user.can_export === false);
   hide(el("select-all").closest("th"), !CAN_REVIEW);
   hide(el("decision-controls"), !CAN_REVIEW);
+  // Viewers see when the round closes -- it explains an empty week of applicants --
+  // but cannot move it. PATCH /admin/settings/ enforces the same rule.
+  hide(el("set-save"), !CAN_REVIEW);
+  el("set-deadline").disabled = !CAN_REVIEW;
 }
 
 el("logout-btn").addEventListener("click", async () => {
   try { await adminCall("POST", "/admin/logout/"); } catch { /* ignore */ }
   TOKEN.set(null);
   showView("login");
+});
+
+/* --------------------------------------------------------- round settings */
+// The deadline. Read by every staff account, changed by reviewers; the server
+// enforces both, so hiding the button is presentation only.
+const SET_ALERT = el("set-alert");
+
+function renderSettings(data) {
+  el("set-deadline").value = data.application_deadline || "";
+  el("set-state").innerHTML = data.applications_open
+    ? `Applications are <strong>open</strong> until ${esc(data.deadline_display)}.`
+    : `Applications <strong>closed</strong> on ${esc(data.deadline_display)}. ` +
+      `New applications and submissions are being refused.`;
+}
+
+async function loadSettings() {
+  hide(SET_ALERT, true);
+  el("set-saved").textContent = "";
+  try {
+    renderSettings(await adminCall("GET", "/admin/settings/"));
+  } catch (err) {
+    if (err.status !== 401) {
+      el("set-state").textContent = "Could not load the deadline.";
+    }
+  }
+}
+
+el("set-save").addEventListener("click", async (e) => {
+  hide(SET_ALERT, true);
+  const button = e.currentTarget;
+  const value = el("set-deadline").value;
+  if (!value) {
+    SET_ALERT.textContent = "Pick a date first.";
+    hide(SET_ALERT, false);
+    return;
+  }
+  button.disabled = true;
+  try {
+    renderSettings(await adminCall("PATCH", "/admin/settings/",
+                                   { application_deadline: value }));
+    el("set-saved").textContent = "Saved.";
+  } catch (err) {
+    if (err.status !== 401) {
+      const data = err.data || {};
+      SET_ALERT.textContent =
+        data.detail || (data.application_deadline || []).join(" ") ||
+        "Could not save the deadline.";
+      hide(SET_ALERT, false);
+    }
+  } finally {
+    button.disabled = false;
+  }
 });
 
 /* ------------------------------------------------------------------- list */
@@ -111,6 +171,7 @@ const DECISION_VALUE = { select: "SELECTED", reject: "REJECTED", pending: "PENDI
 
 async function loadList() {
   showView("list");
+  loadSettings();   // deadline card sits above the list; refreshed with it
   selected.clear();
   updateBulkBar();
   hide(listAlert, true);
@@ -305,6 +366,14 @@ function shortlistOptions() {
 }
 
 async function buildShortlist() {
+  // Nothing to show a reviewer here, and opening the view would render an empty
+  // ranking that looks like "no applicants" rather than "not your account".
+  if (!CAN_SHORTLIST) {
+    listAlert.textContent =
+      "The shortlist builder is restricted to superuser accounts.";
+    hide(listAlert, false);
+    return;
+  }
   showView("shortlist");
   hide(SL_ALERT, true);
   el("sl-body").innerHTML = `<tr><td colspan="12" class="muted">Ranking…</td></tr>`;
@@ -312,7 +381,9 @@ async function buildShortlist() {
     renderShortlist(await adminCall("POST", "/admin/shortlist/", shortlistOptions()));
   } catch (err) {
     if (err.status !== 401) {
-      el("sl-body").innerHTML = `<tr><td colspan="12" class="err">Could not build the shortlist.</td></tr>`;
+      const detail = err.data && err.data.detail;
+      el("sl-body").innerHTML =
+        `<tr><td colspan="12" class="err">${esc(detail || "Could not build the shortlist.")}</td></tr>`;
     }
   }
 }

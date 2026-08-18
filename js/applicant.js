@@ -253,11 +253,32 @@ function stepDetails() {
   $("[data-lead]").textContent =
     `${CONFIG.duration[0].toUpperCase()}${CONFIG.duration.slice(1)} in total: a few ` +
     `questions about your background, your own work, and a short timed knowledge check.`;
+
+  // "Other" free-text: any input with data-other-for="field" is a companion to
+  // the select of that name. Shown only while the select is on "Other", and its
+  // text replaces "Other" in the submitted payload -- storing "Research institute"
+  // instead of a generic "Other" is what makes the panel able to read the record.
+  $$("[data-other-for]").forEach((input) => {
+    const select = stage.querySelector(`[name="${input.dataset.otherFor}"]`);
+    if (!select) return;
+    const refresh = () => input.classList.toggle("hidden", select.value !== "Other");
+    select.addEventListener("change", refresh);
+    refresh();
+  });
+
   $("[data-next]").addEventListener("click", async (e) => {
     clearErrors();
+    const payload = values(DETAIL_FIELDS);
+    $$("[data-other-for]").forEach((input) => {
+      const name = input.dataset.otherFor;
+      if (payload[name] === "Other") {
+        const custom = input.value.trim();
+        if (custom) payload[name] = custom;
+      }
+    });
     const done = busy(e.currentTarget, "Saving…");
     try {
-      const app = await apiJson("POST", "/applications/", values(DETAIL_FIELDS));
+      const app = await apiJson("POST", "/applications/", payload);
       LS.appId = app.id;
       stepEligibility();
     } catch (err) {

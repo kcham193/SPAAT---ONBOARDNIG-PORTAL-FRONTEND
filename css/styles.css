@@ -70,7 +70,7 @@ h3 { font-family: var(--head); font-size: 16px; margin: 0 0 8px; color: var(--bl
 p.lead { color: var(--grey); margin: 0 0 20px; }
 
 /* ---------------------------------------------------------------- steps */
-.steps { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 22px; padding: 0; list-style: none; }
+.steps { display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; margin: 0 0 22px; padding: 0 0 4px; list-style: none; }
 .steps li {
   font-size: 12px; color: var(--grey); background: #e8e6e2;
   border-radius: 20px; padding: 5px 12px; white-space: nowrap;
