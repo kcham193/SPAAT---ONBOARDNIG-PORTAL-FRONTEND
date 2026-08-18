@@ -200,6 +200,11 @@
 
 <template id="tpl-quiz-intro">
   <h1>Knowledge check</h1>
+  <div class="note">
+    <strong>Your application is already submitted.</strong> This last step is scored and
+    shown to the panel alongside everything else you have written — it is not a gate,
+    and a low score does not withdraw your application.
+  </div>
   <p class="lead" data-shape></p>
   <ul class="tight">
     <li><strong data-timing></strong> per question — the countdown is enforced by the server.</li>
@@ -247,8 +252,8 @@
 <template id="tpl-written">
   <h1>Your own work</h1>
   <p class="lead">
-    Three short answers and your CV. These are read by the selection panel — please
-    answer in your own words.
+    Three short answers, your motivation and your CV. These are read by the selection
+    panel — please answer in your own words. The timed knowledge check comes after this.
   </p>
 
   <label>1. Describe a dataset you have personally analysed <span class="req">*</span></label>
@@ -303,16 +308,8 @@
   <div class="field-error" data-error="cv"></div>
 
   <div class="err hidden" data-alert></div>
-  <div class="actions"><button class="btn" data-next>Submit application</button></div>
-</template>
-
-<template id="tpl-done">
-  <div class="centred">
-    <h1>Application submitted</h1>
-    <p class="lead">
-      Thank you — your answers and CV have been received. The selection panel will be
-      in touch by email.
-    </p>
+  <div class="actions">
+    <button class="btn" data-next>Submit and continue to the knowledge check</button>
   </div>
 </template>
 

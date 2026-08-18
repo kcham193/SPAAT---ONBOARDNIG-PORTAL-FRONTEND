@@ -1,12 +1,25 @@
 // Applicant journey: Before you begin -> Details -> Eligibility -> Experience ->
-// Honesty check -> Knowledge check -> Your work -> Submit.
+// Honesty check -> Your work -> Knowledge check -> Result.
+//
+// "Your work" (the written answers and the CV) comes BEFORE the knowledge check.
+// It used to come after and be unlocked only by a passing score, which meant the
+// panel had nothing but a number to read for anyone who scored below the
+// benchmark -- and applicants met a timed section before being asked for the CV
+// they had been told to have ready. The quiz is still timed and still graded; it
+// is simply the last thing that happens, not the gate in the middle.
 //
 // Every step is persisted server-side as it is completed, so a reload resumes
 // from the record rather than from anything the browser remembers. localStorage
 // holds only the application id, and even that is validated on load.
 
 const STEPS = ["Before you begin", "Details", "Eligibility", "Experience",
-               "Honesty check", "Knowledge check", "Your work", "Submit"];
+               "Honesty check", "Your work", "Knowledge check", "Result"];
+
+// Step indices, named rather than repeated: moving a step meant hunting down
+// every show("tpl-…", 5) and the two that were missed showed the wrong item
+// ticked in the progress list.
+const STEP = { BEFORE: 0, DETAILS: 1, ELIGIBILITY: 2, EXPERIENCE: 3,
+               CLAIMS: 4, WRITTEN: 5, QUIZ: 6, RESULT: 7 };
 
 // Deadline, limits, country lists and the shape of the knowledge check, from
 // /api/config/. Nothing user-visible about the rules is written into this file:
@@ -14,10 +27,15 @@ const STEPS = ["Before you begin", "Details", "Eligibility", "Experience",
 let CONFIG = {
   contact_email: "",
   deadline: "",
+  deadline_date: "",
+  // Assumed open until the API says otherwise: a config request that fails must
+  // not lock out an applicant on a round that is actually running. The intake
+  // endpoints refuse a late submission themselves, so nothing is lost by trying.
+  applications_open: true,
   duration: "about 15 minutes",
   funding_gate: true,
   limits: { cv_max_mb: 5, cv_max_pages: 2, max_words: 300 },
-  quiz: { questions: 14, seconds_min: 35, seconds_max: 50, pass_mark: 8 },
+  quiz: { questions: 14, seconds_min: 30, seconds_max: 30, pass_mark: 8 },
   countries: [],
 };
 
@@ -156,13 +174,14 @@ function requirements() {
 }
 
 function stepBefore() {
-  show("tpl-before", 0);
+  show("tpl-before", STEP.BEFORE);
   const items = requirements();
 
   $("[data-lead]").textContent =
-    `This takes ${CONFIG.duration}: your background, a short timed knowledge check, ` +
-    `and a few written answers. Everything you need is listed below — gathering it ` +
-    `first is the difference between a strong application and a thin one.`;
+    `This takes ${CONFIG.duration}: your background, a few written answers with your ` +
+    `CV, and a short timed knowledge check at the end. Everything you need is listed ` +
+    `below — gathering it first is the difference between a strong application and a ` +
+    `thin one.`;
 
   $("[data-cost]").innerHTML =
     `<strong>There is no fee to attend, but we cannot fund travel, accommodation or
@@ -229,11 +248,11 @@ function fillCountries() {
 }
 
 function stepDetails() {
-  show("tpl-details", 1);
+  show("tpl-details", STEP.DETAILS);
   fillCountries();
   $("[data-lead]").textContent =
     `${CONFIG.duration[0].toUpperCase()}${CONFIG.duration.slice(1)} in total: a few ` +
-    `questions about your background, a short timed knowledge check, and your own work.`;
+    `questions about your background, your own work, and a short timed knowledge check.`;
   $("[data-next]").addEventListener("click", async (e) => {
     clearErrors();
     const done = busy(e.currentTarget, "Saving…");
@@ -263,7 +282,7 @@ const ELIGIBILITY = [
 ];
 
 function stepEligibility() {
-  show("tpl-eligibility", 2);
+  show("tpl-eligibility", STEP.ELIGIBILITY);
   $("[data-questions]").innerHTML =
     ELIGIBILITY.map(([n, t, o]) => questionBlock(n, t, o)).join("");
 
@@ -329,7 +348,7 @@ const EXPERIENCE = [
 ];
 
 function stepExperience() {
-  show("tpl-experience", 3);
+  show("tpl-experience", STEP.EXPERIENCE);
   $("[data-questions]").innerHTML = EXPERIENCE.map(([heading, questions]) =>
     `<h2>${heading}</h2>` + questions.map(([n, t, o]) => questionBlock(n, t, o)).join("")
   ).join("");
@@ -356,7 +375,7 @@ function stepExperience() {
 
 /* ------------------------------------------------- step 4: honesty check */
 async function stepClaims() {
-  show("tpl-claims", 4);
+  show("tpl-claims", STEP.CLAIMS);
   const body = $("[data-rows]");
   body.innerHTML = `<tr><td colspan="4" class="muted">Loading…</td></tr>`;
 
@@ -393,7 +412,7 @@ async function stepClaims() {
     const done = busy(e.currentTarget, "Saving…");
     try {
       await apiJson("POST", `/applications/${LS.appId}/claims/`, { claims });
-      stepQuizIntro();
+      stepWritten();
     } catch (err) {
       showErrors(err.data);
     } finally {
@@ -402,9 +421,12 @@ async function stepClaims() {
   });
 }
 
-/* ----------------------------------------------- step 5: knowledge check */
+/* ----------------------------------------------- step 6: knowledge check */
+// The last step. Everything the panel reads has already been submitted by the
+// time an applicant reaches it, so a score below the benchmark costs them the
+// grade and nothing else.
 function stepQuizIntro() {
-  show("tpl-quiz-intro", 5);
+  show("tpl-quiz-intro", STEP.QUIZ);
 
   const { questions, seconds_min, seconds_max } = CONFIG.quiz;
   $("[data-shape]").textContent =
@@ -500,7 +522,7 @@ function startCountdown(allowance) {
 }
 
 function renderQuestion(payload) {
-  show("tpl-question", 5);
+  show("tpl-question", STEP.QUIZ);
   selectedAnswer = null;
   sessionId = payload.session;
 
@@ -611,31 +633,40 @@ async function recoverAfterTimeout(answer) {
       + "your answers so far are saved.");
 }
 
-/* ------------------------------------------------------ result + step 6 */
+/* ------------------------------------------------- step 7: the result */
+// The end of the journey. The score is reported, not acted on: the written
+// answers and the CV went in at step 5, so there is nothing left to unlock and
+// nothing left to withhold. Scoring below the benchmark no longer ends anyone's
+// application -- it is one component of the composite the panel ranks on.
 function showResult(result) {
   stopCountdown();
-  show("tpl-result", 5);
+  show("tpl-result", STEP.RESULT);
   $("[data-score]").textContent = result.score;
   $("[data-total]").textContent = result.total;
 
-  const unlocked = result.passed && !result.final_submitted;
-  $("[data-continue-wrap]").classList.toggle("hidden", !unlocked);
+  // Nothing to continue to any more; the button is kept in the template only for
+  // the case below, where the work step still has to be finished.
+  const owes_work = !result.final_submitted;
+  $("[data-continue-wrap]").classList.toggle("hidden", !owes_work);
 
-  if (result.final_submitted) {
-    $("[data-message]").textContent = "Your application has already been submitted.";
-  } else if (result.passed) {
+  if (owes_work) {
+    // Only reachable for a record created before the work step moved ahead of the
+    // quiz. Send them to it rather than leaving them with no way to finish.
     $("[data-message]").textContent =
-      "You've met the required score. One step left: your own work and your CV.";
+      "One step left: your own work, your motivation and your CV.";
+    $("[data-next]").addEventListener("click", stepWritten);
   } else {
-    $("[data-title]").textContent = "Thank you for taking the knowledge check";
-    $("[data-message]").textContent =
-      `A score of at least ${result.pass_mark} is needed to continue with this application.`;
+    $("[data-title]").textContent = "Application complete";
+    $("[data-message]").textContent = result.passed
+      ? `Thank you — your application is complete. You scored at or above the ` +
+        `benchmark of ${result.pass_mark}. The selection panel will be in touch by email.`
+      : `Thank you — your application is complete and will be considered in full. ` +
+        `The knowledge check is one part of it, alongside your experience, your ` +
+        `written answers and your CV. The selection panel will be in touch by email.`;
+    LS.appId = null;
   }
   $("[data-completed]").textContent = result.completed_at
     ? `Completed ${new Date(result.completed_at).toLocaleString()}` : "";
-
-  if (unlocked) $("[data-next]").addEventListener("click", stepWritten);
-  else LS.appId = null;
 }
 
 const WRITTEN_FIELDS = ["written_dataset", "written_code", "written_why_not_ols",
@@ -687,8 +718,12 @@ function localChecksPass(file) {
   return ok;
 }
 
+/* -------------------------------------------------- step 5: your own work */
+// Submitted before the knowledge check, and it is this submission that unlocks it
+// (views.quiz_start). Everything the panel reads is therefore on the record
+// before the clock starts, whatever the applicant then scores.
 function stepWritten() {
-  show("tpl-written", 6);
+  show("tpl-written", STEP.WRITTEN);
   wireWordCounters();
   $("[data-next]").addEventListener("click", async (e) => {
     clearErrors();
@@ -704,8 +739,7 @@ function stepWritten() {
     const done = busy(e.currentTarget, "Submitting…");
     try {
       await apiForm("POST", `/applications/${LS.appId}/finalize/`, form);
-      show("tpl-done", 7);
-      LS.appId = null;
+      stepQuizIntro();
     } catch (err) {
       showErrors(err.data);
       done();
@@ -733,8 +767,25 @@ async function loadConfig() {
   }
 }
 
+// Applications are closed: say so on the first screen rather than letting someone
+// spend fifteen minutes on a form whose every endpoint will refuse them. The
+// server refuses them regardless -- this is the courtesy, not the control.
+function closedForRound() {
+  stopped(
+    `Applications for this round closed on ${CONFIG.deadline}.`,
+    "Applications are closed",
+  );
+}
+
 (async function boot() {
   await loadConfig();
+
+  // Nobody new once the round has closed. Someone already in the journey is a
+  // different matter and is handled below: the quiz endpoints do not check the
+  // deadline, so an applicant who submitted their work before it passed can still
+  // finish their questions -- and showing them the closed screen here would clear
+  // their stored id and strand them in a quiz that cannot be restarted.
+  if (!CONFIG.applications_open && !LS.appId) { closedForRound(); return; }
 
   if (!LS.appId) { stepBefore(); return; }
 
@@ -742,13 +793,19 @@ async function loadConfig() {
   try {
     state = await apiJson("GET", `/applications/${LS.appId}/status/`);
   } catch {
+    if (!CONFIG.applications_open) { closedForRound(); return; }
     reset();          // stale or deleted -> start a fresh application
     return;
   }
 
   if (state.ineligible_reason) { stopped(state.ineligible_reason); return; }
-  if (state.final_submitted) { LS.appId = null; show("tpl-done", 7); return; }
 
+  // Closed, and they have not started the quiz: every step still ahead of them
+  // would be refused by the server, so say so now rather than at the last one.
+  if (!CONFIG.applications_open && !state.quiz) { closedForRound(); return; }
+
+  // The quiz is the last step, so an existing session outranks everything else:
+  // it either has a question waiting or a result to show.
   if (state.quiz) {
     sessionId = state.quiz.id;
     if (state.quiz.completed_at) { showResult(state.quiz); return; }
@@ -761,9 +818,11 @@ async function loadConfig() {
     return;
   }
 
-  // No quiz yet: pick up at the first unanswered step.
+  // No quiz yet: pick up at the first unanswered step. `written` is what the work
+  // step sets, and it is what unlocks the knowledge check server-side.
   if (!state.completed.eligibility) stepEligibility();
   else if (!state.completed.experience) stepExperience();
   else if (!state.completed.claims) stepClaims();
+  else if (!state.completed.written) stepWritten();
   else stepQuizIntro();
 })();
